@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Computer Graphics Tutorials</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f8f9fa;
+      color: #333;
+    }
+    header {
+      background: #007bff;
+      color: white;
+      text-align: center;
+      padding: 20% 10px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2.5rem;
+    }
+    header p {
+      margin: 10px 0 0;
+      font-size: 1.2rem;
+    }
+    main {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      padding: 30px;
+    }
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: transform 0.2s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    .card h2 {
+      color: #007bff;
+      margin-top: 0;
+    }
+    .card p {
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .btn {
+      display: inline-block;
+      margin-top: 15px;
+      padding: 10px 15px;
+      background: #007bff;
+      color: white;
+      border-radius: 5px;
+      text-decoration: none;
+      transition: background 0.2s ease;
+    }
+    .btn:hover {
+      background: #0056b3;
+    }
+    footer {
+      text-align: center;
+      padding: 20px;
+      margin-top: 30px;
+      font-size: 0.9rem;
+      background: #f1f1f1;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>CodeBase</h1>
+    <p>Bsc.(Hons) IT - University of Vauniya</p>
+  </header>
+
+  <main>
+    <!-- Tutorial 1 -->
+    <div class="card">
+      <h2>Computer Graphics (Practical)</h2>
+      <p>Introduction to drawing lines, shapes, colors, and mouse interactions using Java Swing. Includes DDA algorithm.</p>
+      <a href="CGICA1.html" class="btn">View</a>
+    </div>
+
+    <!-- Tutorial 2 -->
+    <div class="card">
+      <h2>Computer Graphics (Theyore)</h2>
+      <p>Learn about 2D transformations including translation, scaling, and rotation with visual examples.</p>
+      <a href="#" class="btn">Coming Soon</a>
+    </div>
+
+    <!-- Tutorial 3 -->
+    <div class="card">
+      <h2>ICA 03 – Clipping & Windowing</h2>
+      <p>Understand line clipping and window-to-viewport transformations with interactive Java code.</p>
+      <a href="#" class="btn">Coming Soon</a>
+    </div>
+
+    <!-- Tutorial 4 -->
+    <div class="card">
+      <h2>ICA 04 – 3D Graphics Intro</h2>
+      <p>Introduction to 3D graphics concepts and simple 3D transformations in Java.</p>
+      <a href="#" class="btn">Coming Soon</a>
+    </div>
+  </main>
+
+  <footer>
+    &copy; 2025 CodeBase | Powered By Creatives
+  </footer>
+
+</body>
+</html>
