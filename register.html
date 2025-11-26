@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - CodeBase</title>
+  <style>
+    body { margin:0; font-family: 'Poppins', sans-serif; background: linear-gradient(135deg,#1e1e2f,#2d2d44); display:flex; justify-content:center; align-items:center; height:100vh; color:#fff; }
+    .card { background: rgba(255,255,255,0.06); padding:30px; border-radius:16px; width:320px; text-align:center; backdrop-filter: blur(10px); }
+    input { width:100%; padding:10px; border-radius:8px; border:none; margin:10px 0; }
+    button { width:100%; padding:12px; border:none; border-radius:50px; background:#fff;color:#222;font-weight:bold; cursor:pointer; margin-top:10px; transition:0.2s; }
+    button:hover { background:#e9e9e9; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>Register</h2>
+    <p>Fill your details</p>
+
+    <input type="text" id="name" placeholder="Full Name" readonly>
+    <input type="text" id="regNumber" placeholder="University Registration Number">
+    <input type="text" id="phone" placeholder="Phone Number">
+
+    <button onclick="registerUser(document.getElementById('regNumber').value, document.getElementById('phone').value)">
+      Complete Registration
+    </button>
+  </div>
+
+  <script type="module" src="assets/js/firebase.js"></script>
+  <script>
+    // Fill the name field from Google login
+    const user = JSON.parse(localStorage.getItem('user'));
+    if(user) {
+      document.getElementById('name').value = user.name;
+    } else {
+      window.location.href = "login.html"; // redirect if not logged in
+    }
+  </script>
+</body>
+</html>

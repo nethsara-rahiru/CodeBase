@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Code Base - Admin Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script type="module" src="js/admin.js"></script>
+</head>
+<body>
+  <header class="header">
+    <h1>Admin Panel</h1>
+    <button id="logoutBtn" class="btn btn-logout">Logout</button>
+  </header>
+
+  <main class="dashboard-container">
+    <h2 class="section-title">Upload Learning Resources</h2>
+    <div class="form upload-form">
+      <input type="text" id="title" placeholder="Resource Title" />
+      <select id="type">
+        <option value="">Select Type</option>
+        <option value="note">Note</option>
+        <option value="ica">ICA Paper</option>
+        <option value="past">Past Paper</option>
+        <option value="slides">Slides</option>
+      </select>
+      <input type="file" id="fileInput" />
+      <button id="uploadBtn" class="btn btn-primary">Upload</button>
+      <p id="uploadMessage" class="message"></p>
+    </div>
+
+    <h2 class="section-title">Manage Courses</h2>
+    <div id="coursesList" class="cards-grid">
+      <!-- Dynamic course cards for editing -->
+    </div>
+  </main>
+</body>
+</html>
