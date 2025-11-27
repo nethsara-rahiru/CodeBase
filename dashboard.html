@@ -1,28 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Code Base - Dashboard</title>
-  <link rel="stylesheet" href="css/style.css">
-  <script type="module" src="js/dashboard.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #eef2f7;
+    }
+
+    .navbar {
+      width: 100%;
+      background: #4b79ff;
+      padding: 15px;
+      color: #fff;
+      font-size: 20px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    .userinfo {
+      background: #f1f4ff;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+      border-left: 5px solid #4b79ff;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      background: #4b79ff;
+      color: white;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    .btn:hover {
+      background: #345be3;
+    }
+
+  </style>
 </head>
 <body>
-  <header class="header">
-    <h1>Code Base</h1>
-    <button id="logoutBtn" class="btn btn-logout">Logout</button>
-  </header>
 
-  <main class="dashboard-container">
-    <h2 class="section-title">Your Courses</h2>
-    <div id="coursesList" class="cards-grid">
-      <!-- Dynamic course cards will be inserted here -->
+  <div class="navbar">
+    Dashboard
+    <button onclick="logout()" class="btn" style="background:#ff5252;">Logout</button>
+  </div>
+
+  <div class="container">
+    <h2>Welcome!</h2>
+
+    <div id="userBox" class="userinfo">
+      <p><strong>Name:</strong> <span id="userName">Loading...</span></p>
+      <p><strong>Email:</strong> <span id="userEmail">Loading...</span></p>
+      <p><strong>Registration Number:</strong> <span id="userReg">Loading...</span></p>
+      <p><strong>Phone:</strong> <span id="userPhone">Loading...</span></p>
     </div>
 
-    <h2 class="section-title">Announcements</h2>
-    <div id="announcements" class="cards-grid">
-      <!-- Dynamic announcements will appear here -->
-    </div>
-  </main>
+    <a href="#" class="btn">Your Features Here</a>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB-UK8Fa0FN2bt4tfQMl6ksWFwktqB8htU",
+      authDomain: "codebase-83525.firebaseapp.com",
+      projectId: "codebase-83525",
+      storageBucket: "codebase-83525.firebasestorage.app",
+      messagingSenderId: "729735531784",
+      appId: "1:729735531784:web:c6eba0c9a92ef6fff270bd",
+      measurementId: "G-DTPQ1PHCBN"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      const userRef = doc(db, "users", user.uid);
+      const snap = await getDoc(userRef);
+
+      if (!snap.exists()) {
+        window.location.href = "register.html";
+        return;
+      }
+
+      const data = snap.data();
+      document.getElementById("userName").innerText = data.name;
+      document.getElementById("userEmail").innerText = data.email;
+      document.getElementById("userReg").innerText = data.registrationNumber;
+      document.getElementById("userPhone").innerText = data.phone;
+    });
+
+    window.logout = function () {
+      signOut(auth).then(() => window.location.href = "index.html");
+    }
+  </script>
+
 </body>
 </html>

@@ -1,100 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>CodeBase — Login</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-    body {
-        margin: 0;
-        font-family: 'Poppins', sans-serif;
-        background: linear-gradient(135deg, #1e1e2f, #2d2d44);
-        height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        color: white;
-    }
-
-    .card {
-        width: 90%;
-        max-width: 380px;
-        background: rgba(255,255,255,0.08);
-        border-radius: 20px;
-        padding: 40px 25px;
-        text-align: center;
-        backdrop-filter: blur(10px);
-        animation: pop 0.4s ease;
-        border: 1px solid rgba(255,255,255,0.15);
-    }
-
-    @keyframes pop {
-        from { transform: scale(0.8); opacity: 0; }
-        to   { transform: scale(1); opacity: 1; }
-    }
-
-    h1 {
-        margin-bottom: 10px;
-        font-size: 28px;
-    }
-
-    .subtitle {
-        opacity: 0.7;
-        margin-bottom: 30px;
-        font-size: 14px;
-    }
-
-    .google-btn {
-        width: 100%;
-        background: white;
-        color: #333;
-        padding: 12px;
-        border-radius: 50px;
-        border: none;
-        font-size: 16px;
-        font-weight: 600;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        transition: 0.2s;
-    }
-
-    .google-btn:hover {
-        transform: translateY(-3px);
-        background: #e9e9e9;
-    }
-
-    img.icon {
-        width: 22px;
-    }
-
-    .footer {
-        margin-top: 20px;
-        opacity: 0.5;
-        font-size: 12px;
-    }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Code Base - Login</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
+  <div class="container">
+    <div class="login-card">
+      <h1 class="logo">Code Base</h1>
+      <p class="tagline">Learn. Access. Succeed.</p>
 
-<div class="card">
-    <h1>CodeBase</h1>
-    <div class="subtitle">Login using your university Gmail</div>
-
-    <button class="google-btn" onclick="googleLogin()">
-        <img class="icon" src="https://upload.wikimedia.org/wikipedia/commons/0/09/Google_icon.svg">
+      <button id="googleLogin" class="google-btn">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png" />
         Continue with Google
-    </button>
+      </button>
 
-    <div class="footer">Unofficial platform made by students — for students</div>
-</div>
+      <p id="message" class="message"></p>
+    </div>
+  </div>
 
-<!-- Firebase -->
-<script type="module" src="assets/js/firebase.js"></script>
-
+  <script type="module" src="js/login.js"></script>
 </body>
 </html>

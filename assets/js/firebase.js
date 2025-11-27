@@ -3,7 +3,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 // Firebase config
 const firebaseConfig = {
@@ -19,16 +19,19 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
 const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
 
-// Google Login function
+// ------------------------------------------
+// GOOGLE LOGIN FLOW
+// ------------------------------------------
+
 window.googleLogin = async function () {
   try {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
 
-    // Save basic profile to localStorage
+    // Save Google user basic profile
     localStorage.setItem("user", JSON.stringify({
       name: user.displayName,
       email: user.email,
@@ -36,15 +39,28 @@ window.googleLogin = async function () {
       uid: user.uid
     }));
 
-    // Redirect to registration page (first-time)
-    window.location.href = "register.html";
+    // Check if user already exists in Firestore
+    const userRef = doc(db, "users", user.uid);
+    const docSnap = await getDoc(userRef);
+
+    if (docSnap.exists()) {
+      // Already registered → go dashboard
+      window.location.href = "dashboard.html";
+    } else {
+      // New user → go to registration page
+      window.location.href = "register.html";
+    }
+
   } catch (error) {
-    alert("Login failed: " + (error && error.message ? error.message : error));
+    alert("Login failed: " + error.message);
     console.error("Google login error:", error);
   }
 };
 
-// Registration function
+// ------------------------------------------
+// USER REGISTRATION FUNCTION
+// ------------------------------------------
+
 window.registerUser = async function (regNumber, phone) {
   const user = JSON.parse(localStorage.getItem("user"));
   if (!user) {
@@ -55,14 +71,6 @@ window.registerUser = async function (regNumber, phone) {
   const userRef = doc(db, "users", user.uid);
 
   try {
-    // Check if user already exists
-    const docSnap = await getDoc(userRef);
-    if (docSnap.exists()) {
-      alert("You are already registered!");
-      window.location.href = "dashboard.html";
-      return;
-    }
-
     // Save registration data
     await setDoc(userRef, {
       name: user.name,
@@ -74,6 +82,7 @@ window.registerUser = async function (regNumber, phone) {
 
     alert("Registration successful!");
     window.location.href = "dashboard.html";
+
   } catch (error) {
     alert("Failed to register: " + error.message);
     console.error(error);
