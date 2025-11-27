@@ -88,3 +88,6 @@ window.registerUser = async function (regNumber, phone) {
     console.error(error);
   }
 };
+
+export { app };
+
