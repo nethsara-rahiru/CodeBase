@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resources | CodeBase</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #111827, #1e3a8a);
+      color: white;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      align-items: center;
+    }
+
+    .brand { font-size: 22px; font-weight: 600; letter-spacing: 1px; }
+
+    .profile {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .profile img { width: 42px; height: 42px; border-radius: 50%; border: 2px solid #4f46e5; }
+
+    .logout-btn {
+      padding: 8px 16px;
+      background: #ef4444;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .logout-btn:hover { background: #dc2626; }
+
+    .content {
+      flex: 1;
+      padding: 40px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 25px;
+      overflow-x: auto;
+    }
+
+    .card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(8px);
+      transition: 0.3s;
+      cursor: default;
+      height: 60px;
+    }
+
+    .card:hover { background: rgba(255, 255, 255, 0.15); }
+
+    .card .info {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .card h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card p {
+      margin: 0;
+      font-size: 13px;
+      opacity: 0.8;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .open-btn {
+      padding: 6px 14px;
+      background: #2979ff;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+      transition: 0.2s;
+    }
+    .open-btn:hover { background: #1c5ed6; }
+
+    @media (max-width: 600px) { .navbar { flex-direction: column; gap: 10px; } }
+  </style>
+</head>
+
+<body>
+
+  <div class="navbar">
+    <div class="brand">Resources</div>
+    <div class="profile">
+      <img id="userPhoto" src="" alt="">
+      <span id="userName">Loading...</span>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+  </div>
+
+  <div class="content" id="resourcesContainer"></div>
+
+  <script type="module">
+    import { getAuth, onAuthStateChanged, signOut }
+      from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+
+    import { getFirestore, doc, getDoc, collection, getDocs }
+      from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+    import { app } from "./assets/js/firebase.js";
+
+    const auth = getAuth();
+    const db = getFirestore(app);
+    const resourcesContainer = document.getElementById("resourcesContainer");
+
+    const selectedCourseId = localStorage.getItem("selectedCourseId");
+    const selectedContentId = localStorage.getItem("selectedContentId");
+
+    if (!selectedCourseId || !selectedContentId) {
+      resourcesContainer.innerHTML = "<p style='opacity:0.7;'>No content selected!</p>";
+    } else {
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) { window.location.href = "index.html"; return; }
+
+        const userRef = doc(db, "users", user.uid);
+        const snap = await getDoc(userRef);
+        if (!snap.exists()) { window.location.href = "register.html"; return; }
+
+        const data = snap.data();
+        document.getElementById("userName").innerText =
+          `${data.name} (${data.registrationNumber})`;
+        document.getElementById("userPhoto").src = user.photoURL;
+
+        // FETCH RESOURCES
+        const resourcesRef = collection(db, "courses", selectedCourseId, "content", selectedContentId, "resources");
+        const resourcesSnap = await getDocs(resourcesRef);
+
+        resourcesContainer.innerHTML = "";
+
+        if (resourcesSnap.empty) {
+          resourcesContainer.innerHTML = "<p style='opacity:0.7;'>No resources found for this content.</p>";
+        } else {
+          resourcesSnap.forEach(docItem => {
+            const r = docItem.data();
+            const card = document.createElement("div");
+            card.className = "card";
+
+            card.innerHTML = `
+              <div class="info">
+                <h3>${r.title}</h3>
+                <p>Type: ${r.type}</p>
+              </div>
+              <button class="open-btn">Open</button>
+            `;
+
+            const openBtn = card.querySelector(".open-btn");
+            openBtn.addEventListener("click", () => {
+              if(r.link) window.open(r.link, "_blank");
+            });
+
+            resourcesContainer.appendChild(card);
+          });
+        }
+      });
+    }
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      signOut(auth).then(() => {
+        localStorage.clear();
+        window.location.href = "index.html";
+      });
+    });
+
+  </script>
+
+</body>
+</html>
