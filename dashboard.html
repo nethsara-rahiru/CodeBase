@@ -62,8 +62,10 @@
       flex: 1;
       padding: 40px;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(370px, 1fr));
       gap: 25px;
+      white-space: nowrap;
+      overflow: hidden;
     }
 
     .card {
@@ -113,11 +115,7 @@
 
   <!-- MAIN CONTENT -->
   <div class="content">
-    <div class="card"><h3>Notes</h3><p>All lecture notes and reading materials.</p></div>
-    <div class="card"><h3>ICA Papers</h3><p>Practice ICA papers for your subjects.</p></div>
-    <div class="card"><h3>Past Papers</h3><p>University past exams with solutions.</p></div>
-    <div class="card"><h3>Lecture Slides</h3><p>Access lecture slides uploaded by admins.</p></div>
-    <div class="card"><h3>Assignments</h3><p>Answers & guidance for assignments.</p></div>
+    <div class="content" id="courseContainer"></div>
   </div>
 
   <!-- AUTH + FIRESTORE LOGIC -->
@@ -125,7 +123,7 @@
     import { getAuth, onAuthStateChanged, signOut }
       from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
-    import { getFirestore, doc, getDoc }
+    import { getFirestore, doc, getDoc, collection, getDocs }
       from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
     import { app } from "./assets/js/firebase.js";
@@ -133,13 +131,16 @@
     const auth = getAuth();
     const db = getFirestore(app);
 
-    // AUTH + FIRESTORE USER CHECK
+    const courseContainer = document.getElementById("courseContainer");
+
+    // AUTH CHECK
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         window.location.href = "index.html";
         return;
       }
 
+      // USER FIRESTORE CHECK
       const userRef = doc(db, "users", user.uid);
       const snap = await getDoc(userRef);
 
@@ -150,13 +151,41 @@
 
       const data = snap.data();
 
-      // Display user name + reg number
       document.getElementById("userName").innerText =
         `${data.name} (${data.registrationNumber})`;
-
-      // Display user photo
       document.getElementById("userPhoto").src = user.photoURL;
+
+      // LOAD COURSES
+      loadCourses();
     });
+
+    // FETCH COURSES FROM FIRESTORE
+    async function loadCourses() {
+      const courseRef = collection(db, "courses");
+      const courseSnap = await getDocs(courseRef);
+
+      courseContainer.innerHTML = ""; // clear old cards
+
+      courseSnap.forEach(doc => {
+        const c = doc.data();
+
+        // create card
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <h3>${c.name}</h3>
+        `;
+
+        courseContainer.appendChild(card);
+      });
+
+      // If zero courses
+      if (courseSnap.empty) {
+        courseContainer.innerHTML = `
+          <p style="opacity:0.7;">No courses found in database.</p>
+        `;
+      }
+    }
 
     // LOGOUT
     document.getElementById("logoutBtn").addEventListener("click", () => {
@@ -166,6 +195,7 @@
       });
     });
   </script>
+
 
 </body>
 </html>
