@@ -21,21 +21,29 @@
     .navbar {
       display: flex;
       justify-content: space-between;
-      padding: 20px;
+      padding: 18px 20px;
       background: rgba(0, 0, 0, 0.3);
       backdrop-filter: blur(10px);
       align-items: center;
     }
 
-    .brand { font-size: 22px; font-weight: 600; letter-spacing: 1px; }
+    .brand {
+      font-size: 22px;
+      font-weight: 600;
+    }
 
     .profile {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
-    .profile img { width: 42px; height: 42px; border-radius: 50%; border: 2px solid #4f46e5; }
+    .profile img {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 2px solid #4f46e5;
+    }
 
     .logout-btn {
       padding: 8px 16px;
@@ -52,10 +60,9 @@
       flex: 1;
       padding: 40px;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(370px, 1fr));
-      gap: 25px;
-      overflow-x: auto;
-      white-space: nowrap;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      overflow-y: auto;
     }
 
     .card {
@@ -63,23 +70,21 @@
       border-radius: 12px;
       background: rgba(255, 255, 255, 0.1);
       backdrop-filter: blur(8px);
+      height: 35px;
       transition: 0.3s;
       cursor: pointer;
-      display: inline-block;
       text-align: left;
-      max-width: 100%;
-      height: 25px;
       overflow: hidden;
-      text-overflow: ellipsis;
     }
 
     .card:hover {
       background: rgba(255, 255, 255, 0.15);
+      /*transform: translateY(-4px);*/
     }
 
     .card h3 {
-      margin: 0 0 10px;
-      font-size: 18px;
+      margin: 0;
+      font-size: 20px;
       font-weight: 600;
       white-space: nowrap;
       overflow: hidden;
@@ -87,6 +92,7 @@
     }
 
     .card p {
+      margin-top: 6px;
       font-size: 14px;
       opacity: 0.8;
       white-space: nowrap;
@@ -94,10 +100,33 @@
       text-overflow: ellipsis;
     }
 
-    @media (max-width: 600px) { .navbar { flex-direction: column; gap: 10px; } }
-  </style>
-</head>
+    /* LOADING ANIMATION */
+    .loader {
+      margin: 50px auto;
+      border: 4px solid rgba(255,255,255,0.3);
+      border-top: 4px solid #ffffff;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 0.8s linear infinite;
+    }
 
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* MOBILE FIXES */
+    @media (max-width: 600px) {
+      .navbar { flex-direction: column; gap: 10px; }
+      .brand { font-size: 18px; }
+      #userName { font-size: 14px; }
+      .card h3 { font-size: 16px; }
+      .card p { font-size: 12px; }
+    }
+  </style>
+
+</head>
 <body>
 
   <!-- NAVBAR -->
@@ -110,8 +139,9 @@
     </div>
   </div>
 
-  <!-- CONTENT CARDS -->
-  <div class="content" id="contentContainer"></div>
+  <!-- CONTENT AREA -->
+  <div id="loading" class="loader"></div>
+  <div class="content" id="contentContainer" style="display:none;"></div>
 
   <script type="module">
     import { getAuth, onAuthStateChanged, signOut }
@@ -124,53 +154,93 @@
 
     const auth = getAuth();
     const db = getFirestore(app);
+
+    const loading = document.getElementById("loading");
     const contentContainer = document.getElementById("contentContainer");
 
     const selectedCourseId = localStorage.getItem("selectedCourseId");
+
     if (!selectedCourseId) {
-      contentContainer.innerHTML = "<p style='opacity:0.7;'>No course selected!</p>";
-    } else {
-      onAuthStateChanged(auth, async (user) => {
-        if (!user) { window.location.href = "index.html"; return; }
+      loading.style.display = "none";
+      contentContainer.style.display = "block";
+      contentContainer.innerHTML = "<p>No course selected!</p>";
+    }
 
-        const userRef = doc(db, "users", user.uid);
-        const snap = await getDoc(userRef);
-        if (!snap.exists()) { window.location.href = "register.html"; return; }
-
-        const data = snap.data();
+    // FAST LOAD USING LOCALSTORAGE
+    let cachedUser = localStorage.getItem("userData");
+    if (cachedUser) {
+      try {
+        cachedUser = JSON.parse(cachedUser);
         document.getElementById("userName").innerText =
-          `${data.name} (${data.registrationNumber})`;
-        document.getElementById("userPhoto").src = user.photoURL;
+          `${cachedUser.name} (${cachedUser.registrationNumber})`;
+        document.getElementById("userPhoto").src = cachedUser.photoURL;
+      } catch {}
+    }
 
-        // Fetch content
-        const contentRef = collection(db, "courses", selectedCourseId, "content");
-        const contentSnap = await getDocs(contentRef);
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
 
-        contentContainer.innerHTML = "";
+      const userRef = doc(db, "users", user.uid);
+      const snap = await getDoc(userRef);
 
-        if (contentSnap.empty) {
-          contentContainer.innerHTML = "<p style='opacity:0.7;'>No content found for this course.</p>";
-        } else {
-          contentSnap.forEach(docItem => {
-            const c = docItem.data();
-            const card = document.createElement("div");
-            card.className = "card";
-            card.tittle = c.tittle;
-            card.innerHTML = `<h3>${c.tittle}</h3><p>${c.description || ""}</p>`;
+      if (!snap.exists()) {
+        window.location.href = "register.html";
+        return;
+      }
 
-            // Click → go to resources.html with selected content ID
-            card.addEventListener("click", () => {
-              localStorage.setItem("selectedContentId", docItem.id);
-              window.location.href = "resources.html";
-            });
+      const data = snap.data();
 
-            contentContainer.appendChild(card);
-          });
-        }
+      // Update UI
+      document.getElementById("userName").innerText =
+        `${data.name} (${data.registrationNumber})`;
+      document.getElementById("userPhoto").src = user.photoURL;
+
+      // Cache for fast load
+      localStorage.setItem("userData", JSON.stringify({
+        name: data.name,
+        registrationNumber: data.registrationNumber,
+        photoURL: user.photoURL
+      }));
+
+      loadContent();
+    });
+
+    async function loadContent() {
+      const contentRef = collection(db, "courses", selectedCourseId, "content");
+      const contentSnap = await getDocs(contentRef);
+
+      contentContainer.innerHTML = "";
+      loading.style.display = "none";
+      contentContainer.style.display = "grid";
+
+      if (contentSnap.empty) {
+        contentContainer.innerHTML = "<p>No content found.</p>";
+        return;
+      }
+
+      contentSnap.forEach(docItem => {
+        const c = docItem.data();
+
+        const card = document.createElement("div");
+        card.className = "card";
+
+        card.innerHTML = `
+          <h3>${c.tittle}</h3>
+          <p>${c.description || ""}</p>
+        `;
+
+        card.addEventListener("click", () => {
+          localStorage.setItem("selectedContentId", docItem.id);
+          window.location.href = "resources.html";
+        });
+
+        contentContainer.appendChild(card);
       });
     }
 
-    // LOGOUT
     document.getElementById("logoutBtn").addEventListener("click", () => {
       signOut(auth).then(() => {
         localStorage.clear();

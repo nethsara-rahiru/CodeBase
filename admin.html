@@ -1,38 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Code Base - Admin Dashboard</title>
-  <link rel="stylesheet" href="css/style.css">
-  <script type="module" src="js/admin.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin Panel | CodeBase</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+body { margin:0; font-family:'Poppins', sans-serif; background: linear-gradient(135deg,#111827,#1e3a8a); color:white; min-height:100vh; display:flex; flex-direction:column; }
+.navbar { display:flex; justify-content:space-between; padding:18px 22px; background:rgba(0,0,0,0.25); backdrop-filter:blur(10px); border-bottom:1px solid rgba(255,255,255,0.06); align-items:center; }
+.brand { font-size:22px; font-weight:600; }
+.logout-btn { padding:8px 16px; background:#ef4444; border:none; border-radius:6px; color:white; cursor:pointer; }
+.logout-btn:hover { background:#dc2626; }
+.container { padding:20px; flex:1; overflow-y:auto; }
+.form-group { margin-bottom:12px; }
+input, select { width:100%; padding:8px; border-radius:6px; border:none; font-size:14px; }
+button { padding:8px 16px; border-radius:6px; border:none; cursor:pointer; background:#2979ff; color:white; }
+button:hover { background:#1c5ed6; margin-right:5px; }
+table { width:100%; border-collapse:collapse; margin-top:20px; }
+th, td { padding:10px; text-align:left; border-bottom:1px solid rgba(255,255,255,0.2); }
+td button { background:#ef4444; }
+td button:hover { background:#dc2626; }
+</style>
 </head>
+
 <body>
-  <header class="header">
-    <h1>Admin Panel</h1>
-    <button id="logoutBtn" class="btn btn-logout">Logout</button>
-  </header>
+<div class="navbar">
+  <div class="brand">Admin Panel</div>
+  <button class="logout-btn" id="logoutBtn">Logout</button>
+</div>
 
-  <main class="dashboard-container">
-    <h2 class="section-title">Upload Learning Resources</h2>
-    <div class="form upload-form">
-      <input type="text" id="title" placeholder="Resource Title" />
-      <select id="type">
-        <option value="">Select Type</option>
-        <option value="note">Note</option>
-        <option value="ica">ICA Paper</option>
-        <option value="past">Past Paper</option>
-        <option value="slides">Slides</option>
-      </select>
-      <input type="file" id="fileInput" />
-      <button id="uploadBtn" class="btn btn-primary">Upload</button>
-      <p id="uploadMessage" class="message"></p>
-    </div>
+<div class="container">
+  <h2>Add Resource</h2>
+  <div class="form-group">
+    <select id="courseId"><option value="">Select Course</option></select>
+  </div>
+  <div class="form-group">
+    <select id="contentId"><option value="">Select Content Category</option></select>
+  </div>
+  <div class="form-group">
+    <input type="text" id="title" placeholder="Resource Title" />
+  </div>
+  <div class="form-group">
+    <select id="type">
+      <option value="video">Video</option>
+      <option value="pdf">PDF</option>
+      <option value="link">Link</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <input type="text" id="link" placeholder="Resource Link" />
+  </div>
+  <button id="addBtn">Add Resource</button>
 
-    <h2 class="section-title">Manage Courses</h2>
-    <div id="coursesList" class="cards-grid">
-      <!-- Dynamic course cards for editing -->
-    </div>
-  </main>
+  <h2>Existing Resources</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Course</th>
+        <th>Content Category</th>
+        <th>Title</th>
+        <th>Type</th>
+        <th>Link</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="resourcesTable"></tbody>
+  </table>
+</div>
+
+<script type="module">
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+import { app } from "./assets/js/firebase.js";
+
+const auth = getAuth();
+const db = getFirestore(app);
+
+const courseSelect = document.getElementById('courseId');
+const contentSelect = document.getElementById('contentId');
+const titleInput = document.getElementById('title');
+const typeInput = document.getElementById('type');
+const linkInput = document.getElementById('link');
+const addBtn = document.getElementById('addBtn');
+const resourcesTable = document.getElementById('resourcesTable');
+
+// Auth check
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { window.location.href = "index.html"; return; }
+  await loadCourses();
+  await loadResources();
+});
+
+// Logout
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  signOut(auth).then(() => { window.location.href = "index.html"; });
+});
+
+// Load courses
+async function loadCourses() {
+  const coursesSnap = await getDocs(collection(db, "courses"));
+  courseSelect.innerHTML = '<option value="">Select Course</option>';
+  coursesSnap.forEach(docItem => {
+    const option = document.createElement('option');
+    option.value = docItem.id;
+    option.innerText = docItem.id + " - " + docItem.data().name;
+    courseSelect.appendChild(option);
+  });
+  contentSelect.innerHTML = '<option value="">Select Content Category</option>';
+}
+
+// Load modules/content when a course is selected
+courseSelect.addEventListener('change', async () => {
+  const courseId = courseSelect.value;
+  if (!courseId) {
+    contentSelect.innerHTML = '<option value="">Select Content Category</option>';
+    return;
+  }
+  const contentSnap = await getDocs(collection(db, "courses", courseId, "content"));
+  contentSelect.innerHTML = '<option value="">Select Content Category</option>';
+  contentSnap.forEach(contentDoc => {
+    const option = document.createElement('option');
+    option.value = contentDoc.id; // internal doc ID
+    option.innerText = contentDoc.data().tittle || "Unnamed";
+    contentSelect.appendChild(option);
+  });
+});
+
+// Add resource
+addBtn.addEventListener('click', async () => {
+  const courseId = courseSelect.value;
+  const contentId = contentSelect.value;
+  const title = titleInput.value.trim();
+  const type = typeInput.value;
+  const link = linkInput.value.trim();
+
+  if (!courseId || !contentId || !title || !link) { 
+    alert("Select course, content and fill all fields!"); 
+    return; 
+  }
+
+  const resourceRef = doc(collection(db, "courses", courseId, "content", contentId, "resources"));
+  await setDoc(resourceRef, { title, type, link });
+
+  titleInput.value = "";
+  linkInput.value = "";
+  alert("Resource added!");
+  loadResources();
+});
+
+// Load existing resources
+async function loadResources() {
+  resourcesTable.innerHTML = "";
+  const coursesSnap = await getDocs(collection(db, "courses"));
+
+  for (const courseDoc of coursesSnap.docs) {
+    const contentSnap = await getDocs(collection(db, "courses", courseDoc.id, "content"));
+
+    for (const contentDoc of contentSnap.docs) {
+      const contentData = contentDoc.data();
+      const resourcesSnap = await getDocs(collection(db, "courses", courseDoc.id, "content", contentDoc.id, "resources"));
+
+      resourcesSnap.forEach(resourceDoc => {
+        const r = resourceDoc.data();
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${courseDoc.id}</td>
+          <td>${contentData.tittle || ""}</td>
+          <td>${r.title || ""}</td>
+          <td>${r.type || ""}</td>
+          <td>${r.link || ""}</td>
+          <td>
+            <button onclick="deleteResource('${courseDoc.id}','${contentDoc.id}','${resourceDoc.id}')">Delete</button>
+          </td>
+        `;
+        resourcesTable.appendChild(row);
+      });
+    }
+  }
+}
+
+// Delete resource
+window.deleteResource = async (courseId, contentId, resourceId) => {
+  if (!confirm("Delete this resource?")) return;
+  await deleteDoc(doc(db, "courses", courseId, "content", contentId, "resources", resourceId));
+  loadResources();
+};
+</script>
 </body>
 </html>
