@@ -31,7 +31,15 @@
     .brand { font-size: 22px; font-weight: 600; }
     .profile { display: flex; align-items: center; gap: 12px; }
     .profile img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #4f46e5; object-fit: cover; }
-    .logout-btn { padding: 8px 16px; background: #ef4444; border: none; border-radius: 6px; color:white; cursor:pointer; }
+    .logout-btn { 
+        padding: 8px 16px; 
+        background: #ef4444; 
+        border: none; 
+        border-radius: 6px; 
+        color:white; 
+        cursor:pointer; 
+    }
+
     .logout-btn:hover { background: #dc2626; }
 
     .player-box { 
@@ -112,18 +120,15 @@
 <body>
 
   <div class="navbar">
-    <button onclick="history.back()" style="
+    <div class="profile">
+      <button onclick="history.back()" style="
       padding: 8px 16px;
+      left: 0px;;
       background:#2563eb;
       border:none;
       color:white;
       border-radius:6px;
-      cursor:pointer;">⬅ Back</button>
-
-    <div class="brand">Video Player</div>
-
-    <div class="profile">
-      <img id="userPhoto" src="">
+      cursor:pointer;">Back</button>
       <span id="userName">Loading...</span>
       <button class="logout-btn" id="logoutBtn">Logout</button>
     </div>
