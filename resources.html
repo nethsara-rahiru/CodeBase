@@ -18,7 +18,6 @@
       flex-direction: column;
     }
 
-    /* NAVBAR */
     .navbar {
       display: flex;
       justify-content: space-between;
@@ -30,40 +29,12 @@
       flex-wrap: wrap;
     }
 
-    .brand {
-      font-size: 22px;
-      font-weight: 600;
-      letter-spacing: 1px;
-      white-space: nowrap;
-    }
-
-    .profile {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      white-space: nowrap;
-    }
-
-    .profile img {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      border: 2px solid #4f46e5;
-      object-fit: cover;
-    }
-
-    .logout-btn {
-      padding: 8px 16px;
-      background: #ef4444;
-      border: none;
-      border-radius: 6px;
-      color: white;
-      cursor: pointer;
-      transition: 0.2s;
-    }
+    .brand { font-size: 22px; font-weight: 600; letter-spacing: 1px; white-space: nowrap; }
+    .profile { display: flex; align-items: center; gap: 12px; white-space: nowrap; }
+    .profile img { width: 42px; height: 42px; border-radius: 50%; border: 2px solid #4f46e5; object-fit: cover; }
+    .logout-btn { padding: 8px 16px; background: #ef4444; border: none; border-radius: 6px; color: white; cursor: pointer; transition: 0.2s; }
     .logout-btn:hover { background: #dc2626; }
 
-    /* CONTENT AREA */
     .content {
       flex: 1;
       padding: 30px;
@@ -73,10 +44,9 @@
       overflow-y: auto;
     }
 
-    /* RESOURCE CARD */
     .card {
+      position: relative;
       display: flex;
-      justify-content: space-between;
       align-items: center;
       padding: 15px 20px;
       border-radius: 12px;
@@ -84,57 +54,29 @@
       backdrop-filter: blur(10px);
       transition: 0.25s;
       cursor: default;
-      min-height: 65px;
+      min-height: 120px;
       margin-bottom: 10px;
       border: 1px solid rgba(255,255,255,0.08);
-    }
-
-    .card:hover {
-      background: rgba(255, 255, 255, 0.15);
+      overflow: hidden;
     }
 
     .card-left {
       display: flex;
-      align-items: center;
-      gap: 15px;
-      width: 70%;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 1;
+      flex: 1;
     }
 
-    .thumb {
-      width: 60px;
-      height: 60px;
-      border-radius: 6px;
-      background-size: cover;
-      background-position: center;
-      flex-shrink: 0;
-      opacity: 0.8;
-    }
-
-    .info {
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-    }
-
-    .card h3 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 600;
-      text-overflow: ellipsis;
-      overflow: hidden;
-      white-space: nowrap;
-    }
-
-    .card p {
-      margin: 0;
-      font-size: 13px;
-      opacity: 0.8;
-      text-overflow: ellipsis;
-      overflow: hidden;
-      white-space: nowrap;
-    }
+    .card:hover { background: rgba(255, 255, 255, 0.15); }
+    
+    .info h3 { margin: 0; font-size: 16px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+    .info p { margin: 0; font-size: 13px; opacity: 0.8; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
 
     .open-btn {
+      position: absolute;
+      right: 15px;
+      z-index: 2;
       padding: 3% 8%;
       background: #2979ff;
       border: none;
@@ -143,48 +85,51 @@
       cursor: pointer;
       font-size: 13px;
       transition: 0.2s;
-      white-space: nowrap;
-      flex-shrink: 0;
     }
     .open-btn:hover { background: #1c5ed6; }
 
+
+    .thumb {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 50%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+
+       /* Fade-out gradient from left → right */
+      mask-image: linear-gradient(to right, transparent, rgba(0,0,0,1));
+      -webkit-mask-image: linear-gradient(to right, transparent, rgba(0,0,0,1));
+
+      opacity: 0;              /* start invisible */
+      transform: translateX(20px); /* start slightly left */
+      z-index: 0;
+      border-top-right-radius: 12px;
+      border-bottom-right-radius: 12px;
+      transition: opacity 0.5s ease, transform 0.5s ease; /* fade + slide */
+    }
+
+    .thumb.show {
+      opacity: 0.8;           /* final opacity */
+      transform: translateX(0); /* move to original position */
+    }
+
+
     @media (max-width: 600px) {
-      .navbar {
-        flex-direction: column;
-        gap: 10px;
-        text-align: center;
-      }
-
-      .brand {
-        font-size: 18px;
-      }
-
-      #userName {
-        font-size: 13px !important;
-      }
-
-      .card-left {
-        width: 60%;
-      }
-
-      .card h3 {
-        font-size: 14px;
-      }
-
-      .card p {
-        font-size: 12px;
-      }
-
-      .open-btn {
-        padding: 6px 10px;
+      .navbar { flex-direction: column; gap: 10px; text-align: center; }
+      .brand { font-size: 18px; }
+      #userName { font-size: 13px !important; }
+      .open-btn { 
+        padding: 12px 25px;
         font-size: 11px;
+        bottom: 20px;
       }
     }
   </style>
 </head>
 
 <body>
-
   <div class="navbar">
     <div class="brand">Resources</div>
     <div class="profile">
@@ -206,9 +151,24 @@
     const auth = getAuth();
     const db = getFirestore(app);
     const resourcesContainer = document.getElementById("resourcesContainer");
-
     const selectedCourseId = localStorage.getItem("selectedCourseId");
     const selectedContentId = localStorage.getItem("selectedContentId");
+
+    // Encode/Decode helpers
+    function encodeId(id) { return btoa(id); }
+    function decodeId(encoded) { return atob(encoded); }
+
+    // Fetch image and return as Object URL
+    async function fetchImage(url) {
+      try {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        return URL.createObjectURL(blob);
+      } catch (e) {
+        console.error("Image fetch failed:", e);
+        return "assets/img/default-thumbnail.png";
+      }
+    }
 
     if (!selectedCourseId || !selectedContentId) {
       resourcesContainer.innerHTML = "<p style='opacity:0.7;'>No content selected!</p>";
@@ -232,37 +192,55 @@
       if (resourcesSnap.empty) {
         resourcesContainer.innerHTML = "<p style='opacity:0.7;'>No resources found.</p>";
       } else {
-        resourcesSnap.forEach(docItem => {
+        resourcesSnap.forEach(async (docItem) => {
           const r = docItem.data();
           const card = document.createElement("div");
           card.className = "card";
 
           let thumbUrl = "assets/img/default-thumbnail.png";
+          let videoIdEncoded = null;
 
           if (r.type.toLowerCase() === "video") {
             const ytMatch = r.link.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([\w-]+)/);
-            if (ytMatch) thumbUrl = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+            if (ytMatch) {
+              videoIdEncoded = encodeId(ytMatch[1]);
+              const ytThumbUrl = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+              thumbUrl = await fetchImage(ytThumbUrl);
+            }
           } else if (r.type.toLowerCase() === "link") {
-            try { thumbUrl = `https://www.google.com/s2/favicons?sz=64&domain=${new URL(r.link).hostname}`; } catch {}
+            try {
+              const url = new URL(r.link);
+              thumbUrl = await fetchImage(`https://www.google.com/s2/favicons?sz=64&domain=${url.hostname}`);
+            } catch {}
           } else if (r.type.toLowerCase() === "pdf") {
             thumbUrl = "assets/img/pdf-icon.png";
           }
 
           card.innerHTML = `
             <div class="card-left">
-              <div class="thumb" style="background: url('${thumbUrl}') center/cover no-repeat;"></div>
               <div class="info">
                 <h3>${r.title}</h3>
                 <p>Type: ${r.type}</p>
               </div>
             </div>
             <button class="open-btn">Open</button>
+            <div class="thumb" style="background: url('${thumbUrl}') center/cover no-repeat;"></div>
           `;
+
+          const thumbDiv = card.querySelector('.thumb');
+          thumbDiv.style.background = `url('${thumbUrl}') center/cover no-repeat`;
+
+          // Trigger fade-in
+          setTimeout(() => {
+            thumbDiv.classList.add('show');
+          }, 100); // small delay to ensure transition works
+
 
           card.querySelector(".open-btn").addEventListener("click", () => {
             if (!r.link) return;
-            if (r.type.toLowerCase() === "video") {
-              localStorage.setItem("videoLink", r.link);
+            if (r.type.toLowerCase() === "video" && videoIdEncoded) {
+              const videoId = decodeId(videoIdEncoded);
+              localStorage.setItem("videoLink", `https://www.youtube.com/watch?v=${videoId}`);
               window.location.href = "player.html";
             } else {
               window.open(r.link, "_blank");
@@ -280,8 +258,6 @@
         window.location.href = "index.html";
       });
     });
-
   </script>
-
 </body>
 </html>
