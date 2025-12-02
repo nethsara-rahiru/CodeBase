@@ -36,7 +36,8 @@ td button:hover { background:#dc2626; }
     <select id="courseId"><option value="">Select Course</option></select>
   </div>
   <div class="form-group">
-    <select id="contentId"><option value="">Select Content Category</option></select>
+    <input list="contentList" id="contentId" placeholder="Select or Type New Category">
+    <datalist id="contentList"></datalist>
   </div>
   <div class="form-group">
     <input type="text" id="title" placeholder="Resource Title" />
@@ -111,43 +112,80 @@ async function loadCourses() {
 }
 
 // Load modules/content when a course is selected
-courseSelect.addEventListener('change', async () => {
+const contentList = document.getElementById("contentList");
+
+courseSelect.addEventListener("change", async () => {
   const courseId = courseSelect.value;
-  if (!courseId) {
-    contentSelect.innerHTML = '<option value="">Select Content Category</option>';
-    return;
-  }
+
+  contentList.innerHTML = "";
+
+  if (!courseId) return;
+
   const contentSnap = await getDocs(collection(db, "courses", courseId, "content"));
-  contentSelect.innerHTML = '<option value="">Select Content Category</option>';
+
   contentSnap.forEach(contentDoc => {
-    const option = document.createElement('option');
-    option.value = contentDoc.id; // internal doc ID
-    option.innerText = contentDoc.data().tittle || "Unnamed";
-    contentSelect.appendChild(option);
+    const option = document.createElement("option");
+    option.value = contentDoc.data().tittle;
+    option.dataset.id = contentDoc.id;
+    contentList.appendChild(option);
   });
 });
 
+
 // Add resource
-addBtn.addEventListener('click', async () => {
+addBtn.addEventListener("click", async () => {
   const courseId = courseSelect.value;
-  const contentId = contentSelect.value;
+  let contentName = contentSelect.value.trim(); // now input, not select
   const title = titleInput.value.trim();
   const type = typeInput.value;
   const link = linkInput.value.trim();
 
-  if (!courseId || !contentId || !title || !link) { 
-    alert("Select course, content and fill all fields!"); 
-    return; 
+  if (!courseId || !contentName || !title || !link) {
+    alert("Please fill all fields!");
+    return;
   }
 
+  // Check if category already exists
+  let existingId = null;
+  const options = contentList.querySelectorAll("option");
+
+  options.forEach(opt => {
+    if (opt.value.toLowerCase() === contentName.toLowerCase()) {
+      existingId = opt.dataset.id;
+    }
+  });
+
+  let contentId = existingId;
+
+  // If new category → create it
+  if (!contentId) {
+    const newDocRef = doc(collection(db, "courses", courseId, "content"));
+
+    await setDoc(newDocRef, {
+      tittle: contentName
+    });
+
+    contentId = newDocRef.id;
+
+    // Add to datalist instantly
+    const newOption = document.createElement("option");
+    newOption.value = contentName;
+    newOption.dataset.id = contentId;
+    contentList.appendChild(newOption);
+
+    alert("New category created: " + contentName);
+  }
+
+  // Add the resource to Firestore
   const resourceRef = doc(collection(db, "courses", courseId, "content", contentId, "resources"));
+
   await setDoc(resourceRef, { title, type, link });
 
+  alert("Resource added!");
   titleInput.value = "";
   linkInput.value = "";
-  alert("Resource added!");
-  loadResources();
 });
+
 
 // Load existing resources
 async function loadResources() {

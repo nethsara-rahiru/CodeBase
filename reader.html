@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF Reader</title>
+
+<style>
+  body {
+    margin: 0;
+    font-family: "Poppins", sans-serif;
+    background: #0d1117;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  .topbar {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(10px);
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .topbar button {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .topbar button:hover {
+    background: #1d4ed8;
+  }
+
+  #viewerContainer {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+
+  #overlay {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 10%;
+    height: 10%;
+    background: transparent;
+    z-index: 2;
+  }
+
+  @media (max-width: 600px) {
+    #overlay {
+        width: 20%;
+    }
+  }
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <button onclick="history.back()">Back</button>
+</div>
+
+<div id="viewerContainer" style="position: relative; flex: 1;">
+  <iframe id="pdfFrame" src="..." allowfullscreen style="width: 100%; height: 100%; border: none;"></iframe>
+  
+  <!-- Overlay -->
+  <div id="overlay"></div>
+</div>
+
+
+<script>
+  // Get PDF ID from URL
+  const params = new URLSearchParams(window.location.search);
+  const fileId = params.get("id");
+
+  if (!fileId) {
+    alert("PDF ID missing!");
+    throw new Error("No PDF ID provided");
+  }
+
+  // Set iframe src to Google Drive preview link
+  const pdfFrame = document.getElementById("pdfFrame");
+  pdfFrame.src = `https://drive.google.com/file/d/${fileId}/preview`;
+
+  // Optional: Prevent right-click on iframe
+  pdfFrame.addEventListener("contextmenu", (e) => e.preventDefault());
+</script>
+
+</body>
+</html>

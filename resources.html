@@ -249,14 +249,53 @@
 
           card.querySelector(".open-btn").addEventListener("click", () => {
             if (!r.link) return;
-            if (r.type.toLowerCase() === "video" && videoIdEncoded) {
+
+            const type = r.type.toLowerCase();
+
+            // -------------------------
+            // 📌 If VIDEO → open player.html
+            // -------------------------
+            if (type === "video" && videoIdEncoded) {
               const videoId = decodeId(videoIdEncoded);
               localStorage.setItem("videoLink", `https://www.youtube.com/watch?v=${videoId}`);
               window.location.href = "player.html";
-            } else {
-              window.open(r.link, "_blank");
+              return;
             }
+
+            // -------------------------
+            // 📌 If PDF → open reader.html
+            // -------------------------
+            if (type === "pdf") {
+              let fileId = null;
+
+              try {
+                // Match Drive Viewer format
+                const m1 = r.link.match(/\/file\/d\/([a-zA-Z0-9_-]+)\//);
+                if (m1) fileId = m1[1];
+
+                // Match uc download format
+                const m2 = r.link.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                if (m2) fileId = m2[1];
+              } catch (e) {
+                console.error("PDF ID parse failed:", e);
+              }
+
+              if (!fileId) {
+                alert("Invalid PDF link format!");
+                return;
+              }
+
+              // Go to custom PDF reader
+              window.location.href = `reader.html?id=${fileId}`;
+              return;
+            }
+
+            // -------------------------
+            // 📌 Otherwise → open normally
+            // -------------------------
+            window.open(r.link, "_blank");
           });
+
 
           resourcesContainer.appendChild(card);
         });
