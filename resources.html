@@ -88,7 +88,6 @@
     }
     .open-btn:hover { background: #1c5ed6; }
 
-
     .thumb {
       position: absolute;
       top: 0;
@@ -97,24 +96,20 @@
       height: 100%;
       background-size: cover;
       background-position: center;
-
-       /* Fade-out gradient from left → right */
       mask-image: linear-gradient(to right, transparent, rgba(0,0,0,1));
       -webkit-mask-image: linear-gradient(to right, transparent, rgba(0,0,0,1));
-
-      opacity: 0;              /* start invisible */
-      transform: translateX(20px); /* start slightly left */
+      opacity: 0;
+      transform: translateX(20px);
       z-index: 0;
       border-top-right-radius: 12px;
       border-bottom-right-radius: 12px;
-      transition: opacity 0.5s ease, transform 0.5s ease; /* fade + slide */
+      transition: opacity 0.5s ease, transform 0.5s ease;
     }
 
     .thumb.show {
-      opacity: 0.8;           /* final opacity */
-      transform: translateX(0); /* move to original position */
+      opacity: 0.8;
+      transform: translateX(0);
     }
-
 
     @media (max-width: 600px) {
       .navbar { flex-direction: column; gap: 10px; text-align: center; }
@@ -143,7 +138,6 @@
       Resources
     </div>
     <div class="profile">
-      
       <img id="userPhoto" src="" alt="">
       <span id="userName">Loading...</span>
       <button class="logout-btn" id="logoutBtn">Logout</button>
@@ -154,6 +148,7 @@
     <p style="opacity:0.7;">Loading resources...</p>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.min.js"></script>
   <script type="module">
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
     import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
@@ -165,11 +160,9 @@
     const selectedCourseId = localStorage.getItem("selectedCourseId");
     const selectedContentId = localStorage.getItem("selectedContentId");
 
-    // Encode/Decode helpers
     function encodeId(id) { return btoa(id); }
     function decodeId(encoded) { return atob(encoded); }
 
-    // Fetch image and return as Object URL
     async function fetchImage(url) {
       try {
         const res = await fetch(url);
@@ -224,7 +217,22 @@
               thumbUrl = await fetchImage(`https://www.google.com/s2/favicons?sz=64&domain=${url.hostname}`);
             } catch {}
           } else if (r.type.toLowerCase() === "pdf") {
-            thumbUrl = "assets/img/pdf-icon.png";
+            try {
+              let fileId = null;
+              const m1 = r.link.match(/\/file\/d\/([a-zA-Z0-9_-]+)\//);
+              if (m1) fileId = m1[1];
+              const m2 = r.link.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+              if (m2) fileId = m2[1];
+
+              if (fileId) {
+                const iframe = document.createElement("iframe");
+                iframe.src = `https://drive.google.com/file/d/${fileId}/preview`;
+                iframe.width = "100%";
+                iframe.height = "100%";
+                card.appendChild(iframe);
+
+              }
+            } catch (err) { console.error(err); }
           }
 
           card.innerHTML = `
@@ -239,22 +247,12 @@
           `;
 
           const thumbDiv = card.querySelector('.thumb');
-          thumbDiv.style.background = `url('${thumbUrl}') center/cover no-repeat`;
-
-          // Trigger fade-in
-          setTimeout(() => {
-            thumbDiv.classList.add('show');
-          }, 100); // small delay to ensure transition works
-
+          setTimeout(() => thumbDiv.classList.add('show'), 100);
 
           card.querySelector(".open-btn").addEventListener("click", () => {
             if (!r.link) return;
-
             const type = r.type.toLowerCase();
 
-            // -------------------------
-            // 📌 If VIDEO → open player.html
-            // -------------------------
             if (type === "video" && videoIdEncoded) {
               const videoId = decodeId(videoIdEncoded);
               localStorage.setItem("videoLink", `https://www.youtube.com/watch?v=${videoId}`);
@@ -262,40 +260,19 @@
               return;
             }
 
-            // -------------------------
-            // 📌 If PDF → open reader.html
-            // -------------------------
             if (type === "pdf") {
               let fileId = null;
-
-              try {
-                // Match Drive Viewer format
-                const m1 = r.link.match(/\/file\/d\/([a-zA-Z0-9_-]+)\//);
-                if (m1) fileId = m1[1];
-
-                // Match uc download format
-                const m2 = r.link.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-                if (m2) fileId = m2[1];
-              } catch (e) {
-                console.error("PDF ID parse failed:", e);
-              }
-
-              if (!fileId) {
-                alert("Invalid PDF link format!");
-                return;
-              }
-
-              // Go to custom PDF reader
+              const m1 = r.link.match(/\/file\/d\/([a-zA-Z0-9_-]+)\//);
+              if (m1) fileId = m1[1];
+              const m2 = r.link.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+              if (m2) fileId = m2[1];
+              if (!fileId) { alert("Invalid PDF link format!"); return; }
               window.location.href = `reader.html?id=${fileId}`;
               return;
             }
 
-            // -------------------------
-            // 📌 Otherwise → open normally
-            // -------------------------
             window.open(r.link, "_blank");
           });
-
 
           resourcesContainer.appendChild(card);
         });
