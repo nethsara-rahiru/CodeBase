@@ -30,7 +30,7 @@
       background: rgba(255, 255, 255, 0.12);
       padding: 12px;
       border-radius: 10px;
-      margin-bottom: 18px;
+      margin-bottom: 50px;
       font-size: 15px;
       word-break: break-all;
     }
@@ -42,7 +42,7 @@
     }
 
     .input-group input {
-      width: 100%;
+      width: 316px;
       padding: 14px 10px;
       font-size: 16px;
       border: 2px solid #888;
@@ -93,6 +93,9 @@
 
     button:hover {
       background: #e9e9e9;
+    }
+
+    @media (max-width: 600px) {
     }
   </style>
 </head>
@@ -176,6 +179,16 @@
       return /^07[0-9]{8}$/.test(phone);
     }
 
+    // Registration Number validation
+    function validateRegNo() {
+      if (autoReg == document.getElementById("regno").vale){
+        return true;
+      }
+      else{
+        return false;
+      }
+    }
+
     // Final submission
     function submitRegistration() {
       const reg = document.getElementById("regno").value.trim();
@@ -183,6 +196,11 @@
 
       if (!validatePhone(phone)) {
         alert("Invalid phone number. Use Sri Lankan format: 07XXXXXXXX");
+        return;
+      }
+
+      if (!validateRegNo()) {
+        alert("Registration Number does not belogs to the Email");
         return;
       }
 
