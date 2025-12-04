@@ -2,10 +2,12 @@
 // Firebase Google Sign-In + Firestore (module)
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
+// -------------------------
 // Firebase config
+// -------------------------
 const firebaseConfig = {
   apiKey: "AIzaSyB-UK8Fa0FN2bt4tfQMl6ksWFwktqB8htU",
   authDomain: "codebase-83525.firebaseapp.com",
@@ -22,45 +24,73 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-// ------------------------------------------
-// GOOGLE LOGIN FLOW
-// ------------------------------------------
+// Allowed university domains
+const ALLOWED_DOMAINS = ["@std.uwu.ac.lk", "@stu.vau.ac.lk"];
+const ALLOWED_EMAILS = ["rahiru123@gmail.com"];
 
+// ---------------------------------------------------------------------------
+// GOOGLE LOGIN FUNCTION
+// ---------------------------------------------------------------------------
 window.googleLogin = async function () {
   try {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
 
-    // Save Google user basic profile
-    localStorage.setItem("user", JSON.stringify({
+    // Save user info locally
+    const userData = {
+      uid: user.uid,
       name: user.displayName,
       email: user.email,
-      photo: user.photoURL,
-      uid: user.uid
-    }));
+      photo: user.photoURL
+    };
+    localStorage.setItem("user", JSON.stringify(userData));
 
-    // Check if user already exists in Firestore
+    // Check allowed domain or email
+    const isAllowedDomain = ALLOWED_DOMAINS.some(d => user.email.endsWith(d));
+    const isAllowedEmail = ALLOWED_EMAILS.includes(user.email);
+
+    if (!isAllowedDomain && !isAllowedEmail) {
+      alert("Access denied. Only approved university emails allowed.");
+      await signOut(auth);
+      throw new Error("Access denied"); // stop further execution
+    }
+
+    // Check if user exists in Firestore
     const userRef = doc(db, "users", user.uid);
     const docSnap = await getDoc(userRef);
 
     if (docSnap.exists()) {
-      // Already registered → go dashboard
-      window.location.href = "dashboard.html";
+      // Redirect based on role
+      const role = docSnap.data().role || "student";
+      redirectByRole(role);
     } else {
-      // New user → go to registration page
+      // New user → registration page
       window.location.href = "register.html";
     }
 
-  } catch (error) {
-    alert("Login failed: " + error.message);
-    console.error("Google login error:", error);
+    return userData;
+
+  } catch (err) {
+    console.error("Login failed:", err);
+    throw err; // propagate error to caller
   }
 };
 
-// ------------------------------------------
-// USER REGISTRATION FUNCTION
-// ------------------------------------------
 
+// ---------------------------------------------------------------------------
+// HANDLE ROLE-BASED REDIRECTION
+// ---------------------------------------------------------------------------
+function redirectByRole(role) {
+  if (role === "owner" || role === "admin" || role === "editor") {
+    window.location.href = "dashboard.html"; // or admin dashboard
+  } else {
+    window.location.href = "dashboard.html"; // student dashboard
+  }
+}
+
+// ---------------------------------------------------------------------------
+// USER REGISTRATION FUNCTION
+// ---------------------------------------------------------------------------
 window.registerUser = async function (regNumber, phone) {
   const user = JSON.parse(localStorage.getItem("user"));
   if (!user) {
@@ -71,18 +101,17 @@ window.registerUser = async function (regNumber, phone) {
   const userRef = doc(db, "users", user.uid);
 
   try {
-    // Save registration data
     await setDoc(userRef, {
       name: user.name,
       email: user.email,
       registrationNumber: regNumber,
       phone: phone,
-      createdAt: new Date()
+      createdAt: new Date(),
+      role: "student"
     });
 
     alert("Registration successful!");
     window.location.href = "dashboard.html";
-
   } catch (error) {
     alert("Failed to register: " + error.message);
     console.error(error);
@@ -90,4 +119,3 @@ window.registerUser = async function (regNumber, phone) {
 };
 
 export { app };
-

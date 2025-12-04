@@ -21,9 +21,18 @@
       background: rgba(255, 255, 255, 0.06);
       padding: 30px;
       border-radius: 16px;
-      width: 320px;
+      width: 340px;
       text-align: center;
       backdrop-filter: blur(10px);
+    }
+
+    .email-card {
+      background: rgba(255, 255, 255, 0.12);
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 18px;
+      font-size: 15px;
+      word-break: break-all;
     }
 
     .input-group {
@@ -91,9 +100,12 @@
 <body>
 
   <div class="card">
-  
+
     <h2>Register</h2>
-    <p>Fill your details</p>
+    <p>Verify your details</p>
+
+    <!-- USER EMAIL DISPLAY -->
+    <div id="emailCard" class="email-card"></div>
 
     <!-- FULL NAME -->
     <div class="input-group">
@@ -113,7 +125,7 @@
       <label for="phone">Phone Number</label>
     </div>
 
-    <button onclick="registerUser(document.getElementById('regno').value, document.getElementById('phone').value)">
+    <button onclick="submitRegistration()">
       Complete Registration
     </button>
 
@@ -122,32 +134,60 @@
   <script type="module" src="assets/js/firebase.js"></script>
 
   <script>
-    // Fill name field from Google login
     const user = JSON.parse(localStorage.getItem('user'));
-    if (user) {
-      document.getElementById('name').value = user.name;
-    } else {
-      window.location.href = "login.html";
+
+    if (!user) {
+      window.location.href = "index.html";
     }
 
-    // Auto-format registration number
+    // Set email + name
+    document.getElementById("emailCard").textContent = user.email;
+    document.getElementById("name").value = user.name;
+
+    // Extract registration number from email BEFORE the '@'
+    const emailPrefix = user.email.split("@")[0];  // 2022ict62
+
+    // Convert to formatted REG NO → 2022/ICT/62
+    function formatRegNo(raw) {
+      raw = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+      const year = raw.substring(0, 4);    // 2022
+      const dept = raw.substring(4).replace(/[0-9]/g, "");  // ICT
+      const num = raw.substring(4 + dept.length); // 62
+
+      let result = "";
+      if (year) result += year;
+      if (dept) result += "/" + dept;
+      if (num) result += "/" + num;
+
+      return result;
+    }
+
+    const autoReg = formatRegNo(emailPrefix);
+    document.getElementById("regno").value = autoReg;
+
+    // Auto-format on input
     document.getElementById("regno").addEventListener("input", function () {
-      let value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-
-      let year = value.substring(0, 4);
-      let dept = value.substring(4).replace(/[0-9]/g, "");
-      let num = value.substring(4 + dept.length);
-
-      let formatted = "";
-
-      if (year.length > 0) formatted += year;
-      if (value.length > 4) formatted += "/";
-      if (dept.length > 0) formatted += dept;
-      if (dept.length > 0 && num.length > 0) formatted += "/";
-      if (num.length > 0) formatted += num.substring(0, 2);
-
-      this.value = formatted;
+      this.value = formatRegNo(this.value);
     });
+
+    // Phone validation
+    function validatePhone(phone) {
+      return /^07[0-9]{8}$/.test(phone);
+    }
+
+    // Final submission
+    function submitRegistration() {
+      const reg = document.getElementById("regno").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+
+      if (!validatePhone(phone)) {
+        alert("Invalid phone number. Use Sri Lankan format: 07XXXXXXXX");
+        return;
+      }
+
+      registerUser(reg, phone);
+    }
   </script>
 
 </body>

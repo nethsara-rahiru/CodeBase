@@ -88,10 +88,34 @@ const resourcesTable = document.getElementById('resourcesTable');
 
 // Auth check
 onAuthStateChanged(auth, async (user) => {
-  if (!user) { window.location.href = "index.html"; return; }
-  await loadCourses();
-  await loadResources();
-});
+      if (!user) {
+          window.location.href = "index.html";
+          return;
+      }
+
+      const userRef = doc(db, "users", user.uid);
+      const snap = await getDoc(userRef);
+
+      if (!snap.exists()) {
+          window.location.href = "index.html";
+          return;
+      }
+
+      const data = snap.data();
+      const role = (data.role || "").toLowerCase();
+
+      // Allowed roles
+      const allowed = ["owner", "admin", "editor"];
+
+      if (!allowed.includes(role)) {
+          // No permission → kick out
+          alert("You do not have permission to access this page.");
+          window.location.href = "access-denied.html";
+          return;
+      }
+
+      console.log("Access granted. Role:", role);
+  });
 
 // Logout
 document.getElementById('logoutBtn').addEventListener('click', () => {
