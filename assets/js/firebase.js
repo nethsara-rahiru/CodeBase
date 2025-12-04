@@ -26,7 +26,7 @@ const provider = new GoogleAuthProvider();
 
 // Allowed university domains
 const ALLOWED_DOMAINS = ["@std.uwu.ac.lk", "@stu.vau.ac.lk"];
-const ALLOWED_EMAILS = ["rahiru123@gmail.com"];
+const ALLOWED_EMAILS = ["rahiru123@gmail.com","tharinduakalanka85@gmail.com"];
 
 // ---------------------------------------------------------------------------
 // GOOGLE LOGIN FUNCTION
