@@ -180,13 +180,9 @@
     }
 
     // Registration Number validation
+    // Registration Number validation
     function validateRegNo() {
-      if (autoReg == document.getElementById("regno").vale){
-        return true;
-      }
-      else{
-        return false;
-      }
+      return autoReg === document.getElementById("regno").value;
     }
 
     // Final submission
