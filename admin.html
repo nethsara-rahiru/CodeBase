@@ -69,25 +69,39 @@ td button:hover { background:#dc2626; }
     <tbody id="resourcesTable"></tbody>
   </table>
 </div>
+  <script type="module">
+  import { 
+      getAuth, 
+      onAuthStateChanged, 
+      signOut 
+  } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
-<script type="module">
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-import { app } from "./assets/js/firebase.js";
+  import {
+      getFirestore,
+      collection,
+      doc,
+      setDoc,
+      getDocs,
+      getDoc,
+      deleteDoc
+  } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-const auth = getAuth();
-const db = getFirestore(app);
+  import { app } from "./assets/js/firebase.js";
 
-const courseSelect = document.getElementById('courseId');
-const contentSelect = document.getElementById('contentId');
-const titleInput = document.getElementById('title');
-const typeInput = document.getElementById('type');
-const linkInput = document.getElementById('link');
-const addBtn = document.getElementById('addBtn');
-const resourcesTable = document.getElementById('resourcesTable');
+  // FIXED — shared auth instance
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-// Auth check
-onAuthStateChanged(auth, async (user) => {
+  const courseSelect = document.getElementById('courseId');
+  const contentSelect = document.getElementById('contentId');
+  const titleInput = document.getElementById('title');
+  const typeInput = document.getElementById('type');
+  const linkInput = document.getElementById('link');
+  const addBtn = document.getElementById('addBtn');
+  const resourcesTable = document.getElementById('resourcesTable');
+
+  // Auth check
+  onAuthStateChanged(auth, async (user) => {
       if (!user) {
           window.location.href = "index.html";
           return;
@@ -104,150 +118,144 @@ onAuthStateChanged(auth, async (user) => {
       const data = snap.data();
       const role = (data.role || "").toLowerCase();
 
-      // Allowed roles
       const allowed = ["owner", "admin", "editor"];
 
       if (!allowed.includes(role)) {
-          // No permission → kick out
           alert("You do not have permission to access this page.");
           window.location.href = "access-denied.html";
           return;
       }
 
       console.log("Access granted. Role:", role);
+
+      // safe to load everything
+      loadCourses();
+      loadResources();
   });
 
-// Logout
-document.getElementById('logoutBtn').addEventListener('click', () => {
-  signOut(auth).then(() => { window.location.href = "index.html"; });
-});
-
-// Load courses
-async function loadCourses() {
-  const coursesSnap = await getDocs(collection(db, "courses"));
-  courseSelect.innerHTML = '<option value="">Select Course</option>';
-  coursesSnap.forEach(docItem => {
-    const option = document.createElement('option');
-    option.value = docItem.id;
-    option.innerText = docItem.id + " - " + docItem.data().name;
-    courseSelect.appendChild(option);
-  });
-  contentSelect.innerHTML = '<option value="">Select Content Category</option>';
-}
-
-// Load modules/content when a course is selected
-const contentList = document.getElementById("contentList");
-
-courseSelect.addEventListener("change", async () => {
-  const courseId = courseSelect.value;
-
-  contentList.innerHTML = "";
-
-  if (!courseId) return;
-
-  const contentSnap = await getDocs(collection(db, "courses", courseId, "content"));
-
-  contentSnap.forEach(contentDoc => {
-    const option = document.createElement("option");
-    option.value = contentDoc.data().tittle;
-    option.dataset.id = contentDoc.id;
-    contentList.appendChild(option);
-  });
-});
-
-
-// Add resource
-addBtn.addEventListener("click", async () => {
-  const courseId = courseSelect.value;
-  let contentName = contentSelect.value.trim(); // now input, not select
-  const title = titleInput.value.trim();
-  const type = typeInput.value;
-  const link = linkInput.value.trim();
-
-  if (!courseId || !contentName || !title || !link) {
-    alert("Please fill all fields!");
-    return;
-  }
-
-  // Check if category already exists
-  let existingId = null;
-  const options = contentList.querySelectorAll("option");
-
-  options.forEach(opt => {
-    if (opt.value.toLowerCase() === contentName.toLowerCase()) {
-      existingId = opt.dataset.id;
-    }
-  });
-
-  let contentId = existingId;
-
-  // If new category → create it
-  if (!contentId) {
-    const newDocRef = doc(collection(db, "courses", courseId, "content"));
-
-    await setDoc(newDocRef, {
-      tittle: contentName
-    });
-
-    contentId = newDocRef.id;
-
-    // Add to datalist instantly
-    const newOption = document.createElement("option");
-    newOption.value = contentName;
-    newOption.dataset.id = contentId;
-    contentList.appendChild(newOption);
-
-    alert("New category created: " + contentName);
-  }
-
-  // Add the resource to Firestore
-  const resourceRef = doc(collection(db, "courses", courseId, "content", contentId, "resources"));
-
-  await setDoc(resourceRef, { title, type, link });
-
-  alert("Resource added!");
-  titleInput.value = "";
-  linkInput.value = "";
-});
-
-
-// Load existing resources
-async function loadResources() {
-  resourcesTable.innerHTML = "";
-  const coursesSnap = await getDocs(collection(db, "courses"));
-
-  for (const courseDoc of coursesSnap.docs) {
-    const contentSnap = await getDocs(collection(db, "courses", courseDoc.id, "content"));
-
-    for (const contentDoc of contentSnap.docs) {
-      const contentData = contentDoc.data();
-      const resourcesSnap = await getDocs(collection(db, "courses", courseDoc.id, "content", contentDoc.id, "resources"));
-
-      resourcesSnap.forEach(resourceDoc => {
-        const r = resourceDoc.data();
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${courseDoc.id}</td>
-          <td>${contentData.tittle || ""}</td>
-          <td>${r.title || ""}</td>
-          <td>${r.type || ""}</td>
-          <td>${r.link || ""}</td>
-          <td>
-            <button onclick="deleteResource('${courseDoc.id}','${contentDoc.id}','${resourceDoc.id}')">Delete</button>
-          </td>
-        `;
-        resourcesTable.appendChild(row);
+  // Logout
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+      signOut(auth).then(() => {
+          window.location.href = "index.html";
       });
-    }
-  }
-}
+  });
 
-// Delete resource
-window.deleteResource = async (courseId, contentId, resourceId) => {
-  if (!confirm("Delete this resource?")) return;
-  await deleteDoc(doc(db, "courses", courseId, "content", contentId, "resources", resourceId));
-  loadResources();
-};
-</script>
+  // Load courses
+  async function loadCourses() {
+      const coursesSnap = await getDocs(collection(db, "courses"));
+      courseSelect.innerHTML = '<option value="">Select Course</option>';
+
+      coursesSnap.forEach(docItem => {
+          const option = document.createElement('option');
+          option.value = docItem.id;
+          option.innerText = docItem.id + " - " + docItem.data().name;
+          courseSelect.appendChild(option);
+      });
+  }
+
+  const contentList = document.getElementById("contentList");
+
+  courseSelect.addEventListener("change", async () => {
+      const courseId = courseSelect.value;
+      contentList.innerHTML = "";
+
+      if (!courseId) return;
+
+      const contentSnap = await getDocs(collection(db, "courses", courseId, "content"));
+      contentSnap.forEach(contentDoc => {
+          const option = document.createElement("option");
+          option.value = contentDoc.data().tittle;
+          option.dataset.id = contentDoc.id;
+          contentList.appendChild(option);
+      });
+  });
+
+  // Add resource
+  addBtn.addEventListener("click", async () => {
+      const courseId = courseSelect.value;
+      let contentName = contentSelect.value.trim();
+      const title = titleInput.value.trim();
+      const type = typeInput.value;
+      const link = linkInput.value.trim();
+
+      if (!courseId || !contentName || !title || !link) {
+          alert("Please fill all fields!");
+          return;
+      }
+
+      let existingId = null;
+      const options = contentList.querySelectorAll("option");
+
+      options.forEach(opt => {
+          if (opt.value.toLowerCase() === contentName.toLowerCase()) {
+              existingId = opt.dataset.id;
+          }
+      });
+
+      let contentId = existingId;
+
+      if (!contentId) {
+          const newDocRef = doc(collection(db, "courses", courseId, "content"));
+
+          await setDoc(newDocRef, { tittle: contentName });
+          contentId = newDocRef.id;
+
+          const newOption = document.createElement("option");
+          newOption.value = contentName;
+          newOption.dataset.id = contentId;
+          contentList.appendChild(newOption);
+
+          alert("New category created: " + contentName);
+      }
+
+      const resourceRef = doc(collection(db, "courses", courseId, "content", contentId, "resources"));
+
+      await setDoc(resourceRef, { title, type, link });
+
+      alert("Resource added!");
+      titleInput.value = "";
+      linkInput.value = "";
+      loadResources();
+  });
+
+  // Load resources
+  async function loadResources() {
+      resourcesTable.innerHTML = "";
+      const coursesSnap = await getDocs(collection(db, "courses"));
+
+      for (const courseDoc of coursesSnap.docs) {
+          const contentSnap = await getDocs(collection(db, "courses", courseDoc.id, "content"));
+
+          for (const contentDoc of contentSnap.docs) {
+              const contentData = contentDoc.data();
+              const resourcesSnap = await getDocs(collection(db, "courses", courseDoc.id, "content", contentDoc.id, "resources"));
+
+              resourcesSnap.forEach(resourceDoc => {
+                  const r = resourceDoc.data();
+                  const row = document.createElement("tr");
+
+                  row.innerHTML = `
+                      <td>${courseDoc.id}</td>
+                      <td>${contentData.tittle || ""}</td>
+                      <td>${r.title || ""}</td>
+                      <td>${r.type || ""}</td>
+                      <td>${r.link || ""}</td>
+                      <td>
+                          <button onclick="deleteResource('${courseDoc.id}','${contentDoc.id}','${resourceDoc.id}')">Delete</button>
+                      </td>
+                  `;
+
+                  resourcesTable.appendChild(row);
+              });
+          }
+      }
+  }
+
+  window.deleteResource = async (courseId, contentId, resourceId) => {
+      if (!confirm("Delete this resource?")) return;
+      await deleteDoc(doc(db, "courses", courseId, "content", contentId, "resources", resourceId));
+      loadResources();
+  };
+  </script>
 </body>
 </html>
