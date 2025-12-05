@@ -228,24 +228,54 @@
         return;
       }
 
+      const items = [];
+
       contentSnap.forEach(docItem => {
         const c = docItem.data();
+        items.push({
+          id: docItem.id,
+          title: c.tittle,
+          description: c.description || ""
+        });
+      });
 
+      // SORTING LOGIC
+      items.sort((a, b) => {
+        // Extract leading numbers: "01 - Something"
+        const numA = parseInt(a.title);
+        const numB = parseInt(b.title);
+
+        const isNumA = !isNaN(numA);
+        const isNumB = !isNaN(numB);
+
+        if (isNumA && isNumB) {
+          return numA - numB;               // numeric sort
+        }
+
+        if (isNumA && !isNumB) return -1;    // numbers first
+        if (!isNumA && isNumB) return 1;
+
+        return a.title.localeCompare(b.title); // normal alphabetical
+      });
+
+      // RENDER CARDS
+      items.forEach(item => {
         const card = document.createElement("div");
         card.className = "card";
 
         card.innerHTML = `
-          <h3>${c.tittle}</h3>
-          <p>${c.description || ""}</p>
+          <h3>${item.title}</h3>
+          <p>${item.description}</p>
         `;
 
         card.addEventListener("click", () => {
-          localStorage.setItem("selectedContentId", docItem.id);
+          localStorage.setItem("selectedContentId", item.id);
           window.location.href = "resources.html";
         });
 
         contentContainer.appendChild(card);
       });
+
     }
 
     document.getElementById("logoutBtn").addEventListener("click", () => {

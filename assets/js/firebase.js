@@ -91,7 +91,7 @@ function redirectByRole(role) {
 // ---------------------------------------------------------------------------
 // USER REGISTRATION FUNCTION
 // ---------------------------------------------------------------------------
-window.registerUser = async function (regNumber, phone) {
+window.registerUser = async function (regNumber, phone, level) {
   const user = JSON.parse(localStorage.getItem("user"));
   if (!user) {
     alert("Please login first!");
@@ -107,7 +107,8 @@ window.registerUser = async function (regNumber, phone) {
       registrationNumber: regNumber,
       phone: phone,
       createdAt: new Date(),
-      role: "student"
+      role: "student",
+      level: level
     });
 
     alert("Registration successful!");

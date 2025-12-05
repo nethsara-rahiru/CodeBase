@@ -172,32 +172,47 @@
     // 📚 LOAD COURSES
     // -------------------------------
     async function loadCourses() {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      // Get user level
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+      const userLevel = userSnap.data().level; // "1" / "2" / "3" / "4"
+
       const courseRef = collection(db, "courses");
       const courseSnap = await getDocs(courseRef);
 
       courseContainer.innerHTML = "";
 
-      if (courseSnap.empty) {
-        courseContainer.innerHTML = `<p style="opacity: 0.7;">No courses available.</p>`;
-        return;
-      }
+      let found = false;
 
       courseSnap.forEach(docItem => {
-        const c = docItem.data();
-        const id = docItem.id;
+        const id = docItem.id;      // Example: IT1134
+        const year = id[2];         // 1, 2, 3, or 4  (3rd character)
 
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `<h3>${c.name}</h3>`;
+        if (year == userLevel) {
+          found = true;
 
-        card.addEventListener("click", () => {
-          localStorage.setItem("selectedCourseId", id);
-          window.location.href = "content.html";
-        });
+          const c = docItem.data();
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `<h3>${c.name}</h3>`;
 
-        courseContainer.appendChild(card);
+          card.addEventListener("click", () => {
+            localStorage.setItem("selectedCourseId", id);
+            window.location.href = "content.html";
+          });
+
+          courseContainer.appendChild(card);
+        }
       });
+
+      if (!found) {
+        courseContainer.innerHTML = `<p style="opacity:0.7;">No courses found for your academic year.</p>`;
+      }
     }
+
 
     // -------------------------------
     // 🚪 LOGOUT

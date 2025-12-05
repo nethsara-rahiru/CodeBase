@@ -196,86 +196,102 @@
       if (resourcesSnap.empty) {
         resourcesContainer.innerHTML = "<p style='opacity:0.7;'>No resources found.</p>";
       } else {
-        resourcesSnap.forEach(async (docItem) => {
-          const r = docItem.data();
-          const card = document.createElement("div");
-          card.className = "card";
+          // NEW: Collect all items in an array
+          const items = [];
 
-          let thumbUrl = "assets/img/default-thumbnail.png";
-          let videoIdEncoded = null;
-
-          if (r.type.toLowerCase() === "video") {
-            const ytMatch = r.link.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([\w-]+)/);
-            if (ytMatch) {
-              videoIdEncoded = encodeId(ytMatch[1]);
-              const ytThumbUrl = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
-              thumbUrl = await fetchImage(ytThumbUrl);
-            }
-          } else if (r.type.toLowerCase() === "link") {
-            try {
-              const url = new URL(r.link);
-              thumbUrl = await fetchImage(`https://www.google.com/s2/favicons?sz=64&domain=${url.hostname}`);
-            } catch {}
-          } else if (r.type.toLowerCase() === "pdf") {
-            try {
-              let fileId = null;
-              const m1 = r.link.match(/\/file\/d\/([a-zA-Z0-9_-]+)\//);
-              if (m1) fileId = m1[1];
-              const m2 = r.link.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-              if (m2) fileId = m2[1];
-
-              if (fileId) {
-                const iframe = document.createElement("iframe");
-                iframe.src = `https://drive.google.com/file/d/${fileId}/preview`;
-                iframe.width = "100%";
-                iframe.height = "100%";
-                card.appendChild(iframe);
-
-              }
-            } catch (err) { console.error(err); }
-          }
-
-          card.innerHTML = `
-            <div class="card-left">
-              <div class="info">
-                <h3>${r.title}</h3>
-                <p>Type: ${r.type}</p>
-              </div>
-            </div>
-            <button class="open-btn">Open</button>
-            <div class="thumb" style="background: url('${thumbUrl}') center/cover no-repeat;"></div>
-          `;
-
-          const thumbDiv = card.querySelector('.thumb');
-          setTimeout(() => thumbDiv.classList.add('show'), 100);
-
-          card.querySelector(".open-btn").addEventListener("click", () => {
-            if (!r.link) return;
-            const type = r.type.toLowerCase();
-
-            if (type === "video" && videoIdEncoded) {
-              const videoId = decodeId(videoIdEncoded);
-              localStorage.setItem("videoLink", `https://www.youtube.com/watch?v=${videoId}`);
-              window.location.href = "player.html";
-              return;
-            }
-
-            if (type === "pdf") {
-              let fileId = null;
-              const m1 = r.link.match(/\/file\/d\/([a-zA-Z0-9_-]+)\//);
-              if (m1) fileId = m1[1];
-              const m2 = r.link.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-              if (m2) fileId = m2[1];
-              if (!fileId) { alert("Invalid PDF link format!"); return; }
-              window.location.href = `reader.html?id=${fileId}`;
-              return;
-            }
-
-            window.open(r.link, "_blank");
+          resourcesSnap.forEach(docItem => {
+            const r = docItem.data();
+            items.push({
+              id: docItem.id,
+              title: r.title,
+              type: r.type,
+              link: r.link
+            });
           });
 
-          resourcesContainer.appendChild(card);
-        });
+          // --- SORTING LOGIC ---
+          items.sort((a, b) => {
+            const numA = parseInt(a.title);
+            const numB = parseInt(b.title);
+
+            const isNumA = !isNaN(numA);
+            const isNumB = !isNaN(numB);
+
+            if (isNumA && isNumB) return numA - numB;
+            if (isNumA && !isNumB) return -1;
+            if (!isNumA && isNumB) return 1;
+
+            return a.title.localeCompare(b.title);
+          });
+
+          // --- RENDER CARDS AFTER SORTING ---
+          for (const item of items) {
+            const r = item;
+            const card = document.createElement("div");
+            card.className = "card";
+
+            let thumbUrl = "assets/img/default-thumbnail.png";
+            let videoIdEncoded = null;
+
+            if (r.type.toLowerCase() === "video") {
+              const ytMatch = r.link.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([\w-]+)/);
+              if (ytMatch) {
+                videoIdEncoded = encodeId(ytMatch[1]);
+                const ytThumbUrl = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+                thumbUrl = await fetchImage(ytThumbUrl);
+              }
+            } 
+            else if (r.type.toLowerCase() === "link") {
+              try {
+                const url = new URL(r.link);
+                thumbUrl = await fetchImage(`https://www.google.com/s2/favicons?sz=64&domain=${url.hostname}`);
+              } catch {}
+            }
+
+            card.innerHTML = `
+              <div class="card-left">
+                <div class="info">
+                  <h3>${r.title}</h3>
+                  <p>Type: ${r.type}</p>
+                </div>
+              </div>
+              <button class="open-btn">Open</button>
+              <div class="thumb" style="background:url('${thumbUrl}') center/cover no-repeat;"></div>
+            `;
+
+            // Thumbnail animation
+            const thumbDiv = card.querySelector('.thumb');
+            setTimeout(() => thumbDiv.classList.add('show'), 100);
+
+            // Open button logic
+            card.querySelector(".open-btn").addEventListener("click", () => {
+              if (!r.link) return;
+              const type = r.type.toLowerCase();
+
+              if (type === "video" && videoIdEncoded) {
+                const videoId = decodeId(videoIdEncoded);
+                localStorage.setItem("videoLink", `https://www.youtube.com/watch?v=${videoId}`);
+                window.location.href = "player.html";
+                return;
+              }
+
+              if (type === "pdf") {
+                let fileId = null;
+                const m1 = r.link.match(/\/file\/d\/([a-zA-Z0-9_-]+)\//);
+                if (m1) fileId = m1[1];
+                const m2 = r.link.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                if (m2) fileId = m2[1];
+                if (!fileId) { alert("Invalid PDF link format!"); return; }
+                window.location.href = `reader.html?id=${fileId}`;
+                return;
+              }
+
+              window.open(r.link, "_blank");
+            });
+
+            resourcesContainer.appendChild(card);
+          }
+
       }
     });
 

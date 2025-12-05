@@ -59,7 +59,7 @@
       box-shadow: 0 0 8px rgba(41, 121, 255, 0.4);
     }
 
-    .input-group label {
+    .label {
       position: absolute;
       top: 14px;
       left: 12px;
@@ -73,9 +73,29 @@
 
     .input-group input:focus + label,
     .input-group input:not(:placeholder-shown) + label {
-      top: -10px;
+      top: -15px;
       font-size: 13px;
       color: #ffffff;
+    }
+
+    #level {
+      width: 340px;
+      padding: 14px 10px;
+      font-size: 16px;
+      border: 2px solid #888;
+      outline: none;
+      border-radius: 10px;
+      transition: 0.3s ease;
+      background: #f8f8f8;
+      color: #000;
+    }
+
+    .sLabel {
+      top: -15px;
+      left: 20px;
+      font-size: 13px;
+      color: #ffffff;
+      position: absolute;
     }
 
     button {
@@ -113,19 +133,30 @@
     <!-- FULL NAME -->
     <div class="input-group">
       <input type="text" id="name" placeholder=" " readonly>
-      <label for="name">Full Name</label>
+      <label for="name" class="label">Full Name</label>
     </div>
 
     <!-- REGISTRATION NUMBER -->
     <div class="input-group">
       <input type="text" id="regno" maxlength="15" placeholder=" " required>
-      <label for="regno">Registration Number</label>
+      <label for="regno" class="label">Registration Number</label>
+    </div>
+
+    <!-- Year -->
+    <div class="input-group">
+      <label class="sLabel">Acadamic Year</label>
+      <select id="level" required>
+        <option value="1">1st Year</option>
+        <option value="2">2nd Year</option>
+        <option value="3">3rd Year</option>
+        <option value="4">4th Year</option>
+      </select>
     </div>
 
     <!-- PHONE -->
     <div class="input-group">
       <input type="text" id="phone" placeholder=" ">
-      <label for="phone">Phone Number</label>
+      <label for="phone" class="label">Phone Number</label>
     </div>
 
     <button onclick="submitRegistration()">
@@ -180,7 +211,6 @@
     }
 
     // Registration Number validation
-    // Registration Number validation
     function validateRegNo() {
       return autoReg === document.getElementById("regno").value;
     }
@@ -189,6 +219,7 @@
     function submitRegistration() {
       const reg = document.getElementById("regno").value.trim();
       const phone = document.getElementById("phone").value.trim();
+      const level = document.getElementById("level").value.trim();
 
       if (!validatePhone(phone)) {
         alert("Invalid phone number. Use Sri Lankan format: 07XXXXXXXX");
@@ -200,7 +231,7 @@
       //  return;
       //}
 
-      registerUser(reg, phone);
+      registerUser(reg, phone, level);
     }
   </script>
 
