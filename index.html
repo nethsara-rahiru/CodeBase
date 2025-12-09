@@ -94,7 +94,7 @@
             margin-top: 35%;
             margin-bottom: 10%;
         }
-     }
+    }
 </style>
 </head>
 
@@ -115,25 +115,30 @@
 </div>
 
 <script>
-    function handleGoogleLogin() {
-        const btn = document.getElementById("googleBtn");
-        const loading = document.getElementById("loading");
+async function handleGoogleLogin() {
+    const btn = document.getElementById("googleBtn");
+    const loading = document.getElementById("loading");
 
-        btn.disabled = true;
-        btn.style.opacity = "0.6";
-        loading.style.display = "block";
+    btn.disabled = true;
+    btn.style.opacity = "0.6";
+    loading.style.display = "block";
 
-         // Call the Firebase login function
-        window.googleLogin().catch((error) => {
-            alert("Login failed: " + error.message);
-            console.error("Login error:", error);
-            // Reload the page on failure
-            window.location.reload();
-        });
+    try {
+        // This will run the login in firebase.js
+        await window.googleLogin();
+    } 
+    catch (error) {
+        console.error("Login error:", error);
+        alert("Login failed: " + (error.message || "Unknown error"));
+    } 
+    finally {
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        loading.style.display = "none";
     }
+}
 </script>
 
-<!-- Firebase App Logic -->
 <script type="module" src="assets/js/firebase.js"></script>
 
 </body>

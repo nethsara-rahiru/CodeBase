@@ -1,3 +1,5 @@
+<!----register.html-->>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -79,7 +81,7 @@
     }
 
     #level {
-      width: 340px;
+      width: 316px;
       padding: 14px 10px;
       font-size: 16px;
       border: 2px solid #888;
@@ -185,19 +187,43 @@
     function formatRegNo(raw) {
       raw = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
 
-      const year = raw.substring(0, 4);    // 2022
-      const dept = raw.substring(4).replace(/[0-9]/g, "");  // ICT
-      const num = raw.substring(4 + dept.length); // 62
+      // Extract first 4 digits → YEAR
+      const year = raw.substring(0, 4);
 
-      let result = "";
-      if (year) result += year;
+      // After year, find first number → split dept & number
+      let dept = "";
+      let num = "";
+
+      for (let i = 4; i < raw.length; i++) {
+        if (/[0-9]/.test(raw[i])) {
+          dept = raw.substring(4, i);
+          num = raw.substring(i);
+          break;
+        }
+      }
+
+      // If still no number found, assume all letters are dept
+      if (dept === "") {
+        dept = raw.substring(4);
+      }
+
+      let result = year;
+
       if (dept) result += "/" + dept;
-      if (num) result += "/" + num;
+      if (num) result += "/" + num;  // add only if number exists
 
       return result;
     }
 
-    const autoReg = formatRegNo(emailPrefix);
+    const allowedUserDetails = JSON.parse(localStorage.getItem("allowedUserDetails"));
+    let autoReg;
+
+    if (allowedUserDetails && allowedUserDetails.regNo) {
+      autoReg = allowedUserDetails.regNo; // Use saved regNo
+    } else {
+      autoReg = formatRegNo(emailPrefix); // Fallback
+    }
+
     document.getElementById("regno").value = autoReg;
 
     // Auto-format on input

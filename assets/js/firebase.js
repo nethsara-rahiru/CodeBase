@@ -1,13 +1,23 @@
 // assets/js/firebase.js
-// Firebase Google Sign-In + Firestore (module)
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut
+} from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  getDocs,
+  query,
+  where
+} from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-// -------------------------
 // Firebase config
-// -------------------------
 const firebaseConfig = {
   apiKey: "AIzaSyB-UK8Fa0FN2bt4tfQMl6ksWFwktqB8htU",
   authDomain: "codebase-83525.firebaseapp.com",
@@ -24,19 +34,17 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-// Allowed university domains
 const ALLOWED_DOMAINS = ["@std.uwu.ac.lk", "@stu.vau.ac.lk"];
-const ALLOWED_EMAILS = ["rahiru123@gmail.com","tharinduakalanka85@gmail.com"];
 
-// ---------------------------------------------------------------------------
-// GOOGLE LOGIN FUNCTION
-// ---------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------
+// GOOGLE LOGIN
+// ------------------------------------------------------------------------------------------
 window.googleLogin = async function () {
   try {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
 
-    // Save user info locally
+    // Save basic user info locally
     const userData = {
       uid: user.uid,
       name: user.displayName,
@@ -45,78 +53,107 @@ window.googleLogin = async function () {
     };
     localStorage.setItem("user", JSON.stringify(userData));
 
-    // Check allowed domain or email
-    const isAllowedDomain = ALLOWED_DOMAINS.some(d => user.email.endsWith(d));
-    const isAllowedEmail = ALLOWED_EMAILS.includes(user.email);
+    // ---------------------------
+    // FIRESTORE CHECK → allowedEmails
+    // ---------------------------
+    const allowedRef = collection(db, "login_control", "access", "allowedEmails");
+    const allowedSnap = await getDocs(allowedRef);
+    const allowedDocs = allowedSnap.docs.map(d => d.data());
 
-    if (!isAllowedDomain && !isAllowedEmail) {
-      alert("Access denied. Only approved university emails allowed.");
-      await signOut(auth);
-      throw new Error("Access denied"); // stop further execution
+    // Find the record corresponding to the logged-in user
+    const allowedUser = allowedDocs.find(d => d.email === user.email);
+
+    // Save current allowed user details locally
+    if (allowedUser) {
+      localStorage.setItem("allowedUserDetails", JSON.stringify({
+        email: allowedUser.email,
+        regNo: allowedUser.regNo
+      }));
     }
 
-    // Check if user exists in Firestore
-    const userRef = doc(db, "users", user.uid);
-    const docSnap = await getDoc(userRef);
+    const domainAllowed = ALLOWED_DOMAINS.some(d => user.email.endsWith(d));
+    const emailAllowed = !!allowedUser; // true if user is in allowedEmails
 
-    if (docSnap.exists()) {
+    if (!domainAllowed && !emailAllowed) {
+      alert("Access denied. Only approved emails allowed.");
+      await signOut(auth);
+      localStorage.removeItem("user");
+      return;
+    }
+
+    // ---------------------------
+    // FIRESTORE CHECK → bannedReg
+    // ---------------------------
+    const bannedRef = collection(db, "login_control", "access", "bannedReg");
+    const bannedSnap = await getDocs(bannedRef);
+    const bannedList = bannedSnap.docs.map(d => d.data().regNo);
+
+    const userRef = doc(db, "users", user.uid);
+    const userDoc = await getDoc(userRef);
+
+    if (userDoc.exists()) {
+      const reg = userDoc.data().registrationNumber;
+
+      if (bannedList.includes(reg)) {
+        alert("Your account is banned.");
+        await signOut(auth);
+        localStorage.removeItem("user");
+        return;
+      }
+
       // Redirect based on role
-      const role = docSnap.data().role || "student";
-      redirectByRole(role);
+      redirectByRole(userDoc.data().role || "student");
     } else {
-      // New user → registration page
+      // First login → go to register page
       window.location.href = "register.html";
     }
 
-    return userData;
-
   } catch (err) {
     console.error("Login failed:", err);
-    throw err; // propagate error to caller
   }
 };
 
-
-// ---------------------------------------------------------------------------
-// HANDLE ROLE-BASED REDIRECTION
-// ---------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------
+// ROLE REDIRECTION
+// ------------------------------------------------------------------------------------------
 function redirectByRole(role) {
-  if (role === "owner" || role === "admin" || role === "editor") {
-    window.location.href = "dashboard.html"; // or admin dashboard
-  } else {
-    window.location.href = "dashboard.html"; // student dashboard
-  }
+  window.location.href = "dashboard.html";
 }
 
-// ---------------------------------------------------------------------------
-// USER REGISTRATION FUNCTION
-// ---------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------
+// REGISTER USER
+// ------------------------------------------------------------------------------------------
 window.registerUser = async function (regNumber, phone, level) {
   const user = JSON.parse(localStorage.getItem("user"));
   if (!user) {
-    alert("Please login first!");
+    alert("Please login first");
+    return;
+  }
+
+  // Check banned list BEFORE registration
+  const bannedRef = collection(db, "login_control", "access", "bannedReg");
+  const q = query(bannedRef, where("regNo", "==", regNumber));
+  const bannedSnap = await getDocs(q);
+
+  if (!bannedSnap.empty) {
+    alert("This registration number is banned.");
     return;
   }
 
   const userRef = doc(db, "users", user.uid);
 
-  try {
-    await setDoc(userRef, {
-      name: user.name,
-      email: user.email,
-      registrationNumber: regNumber,
-      phone: phone,
-      createdAt: new Date(),
-      role: "student",
-      level: level
-    });
+  await setDoc(userRef, {
+    name: user.name,
+    email: user.email,
+    registrationNumber: regNumber,
+    phone: phone,
+    level: level,
+    createdAt: new Date(),
+    role: "student"
+  });
 
-    alert("Registration successful!");
-    window.location.href = "dashboard.html";
-  } catch (error) {
-    alert("Failed to register: " + error.message);
-    console.error(error);
-  }
+  alert("Registration Successful!");
+  window.location.href = "dashboard.html";
 };
 
 export { app };
