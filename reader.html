@@ -33,6 +33,7 @@
     padding: 7px 14px;
     border-radius: 6px;
     cursor: pointer;
+    transition: 0.2s;
   }
 
   .topbar button:hover {
@@ -51,19 +52,24 @@
     border: none;
   }
 
-  #overlay {
+  /* ---------------------------------------------
+     WATERMARK OVERLAY (Visible on screen only)
+  --------------------------------------------- */
+  #watermark {
     position: absolute;
-    top: 0;
-    right: 0;
-    width: 10%;
-    height: 10%;
-    background: transparent;
-    z-index: 2;
+    bottom: 20px;
+    right: 20px;
+    width: 150px;
+    opacity: 0.8;
+    pointer-events: none; /* can't click */
+    z-index: 50;
   }
 
   @media (max-width: 600px) {
-    #overlay {
-        width: 20%;
+    #watermark {
+      width: 100px;
+      bottom: 10px;
+      right: 10px;
     }
   }
 </style>
@@ -73,32 +79,38 @@
 
 <div class="topbar">
   <button onclick="history.back()">Back</button>
+  <button onclick="downloadPDF()">Download</button>
 </div>
 
-<div id="viewerContainer" style="position: relative; flex: 1;">
-  <iframe id="pdfFrame" src="..." allowfullscreen style="width: 100%; height: 100%; border: none;"></iframe>
-  
-  <!-- Overlay -->
-  <div id="overlay"></div>
-</div>
+<div id="viewerContainer">
+  <iframe id="pdfFrame" src="" allowfullscreen></iframe>
 
+  <!-- Watermark Overlay -->
+  <img id="watermark" src="assets/img/CodeBase_wide.png">
+</div>
 
 <script>
-  // Get PDF ID from URL
   const params = new URLSearchParams(window.location.search);
   const fileId = params.get("id");
 
   if (!fileId) {
     alert("PDF ID missing!");
-    throw new Error("No PDF ID provided");
+    throw new Error("No PDF ID");
   }
 
-  // Set iframe src to Google Drive preview link
-  const pdfFrame = document.getElementById("pdfFrame");
-  pdfFrame.src = `https://drive.google.com/file/d/${fileId}/preview`;
+  // Load PDF into viewer
+  const previewURL = `https://drive.google.com/file/d/${fileId}/preview`;
+  document.getElementById("pdfFrame").src = previewURL;
 
-  // Optional: Prevent right-click on iframe
-  pdfFrame.addEventListener("contextmenu", (e) => e.preventDefault());
+  // Direct download (Google Drive allowed)
+  function downloadPDF() {
+    const link = document.createElement("a");
+    link.href = `https://drive.google.com/u/0/uc?id=${fileId}&export=download`;
+    link.download = "document.pdf";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 </script>
 
 </body>
