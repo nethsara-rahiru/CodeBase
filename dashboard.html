@@ -150,19 +150,20 @@
         return;
       }
 
+      let snap
       if(localStorage.getItem("appCode")){
         userPhoto.src = localStorage.getItem("photoUrl");
 
         // Check Firestore for user details
         const ref = doc(db, "users", localStorage.getItem("uid"));
-        const snap = await getDoc(ref);
+        snap = await getDoc(ref);
       }
       else{
         userPhoto.src = user.photoURL || "";
 
         // Check Firestore for user details
         const ref = doc(db, "users", user.uid);
-        const snap = await getDoc(ref);
+        snap = await getDoc(ref);
       }
 
       if (!snap.exists()) {
@@ -186,11 +187,12 @@
       if (!user && localStorage.getItem("appCode") != "App") return;
 
       // Get user level
+      let userRef
       if(localStorage.getItem("appCode")){
-        const userRef = doc(db, "users", localStorage.getItem("uid"));
+        userRef = doc(db, "users", localStorage.getItem("uid"));
       }
       else{
-        const userRef = doc(db, "users", user.uid);
+        userRef = doc(db, "users", user.uid);
       }
       const userSnap = await getDoc(userRef);
       const userLevel = userSnap.data().level; // "1" / "2" / "3" / "4"
