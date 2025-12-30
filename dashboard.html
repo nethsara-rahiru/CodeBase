@@ -145,7 +145,7 @@
     // 🔐 FAST + SECURE AUTH CHECK
     // -------------------------------
     onAuthStateChanged(auth, async (user) => {
-      if (!user || localStorage.getItem("appCode") != "App") {
+      if (!user && localStorage.getItem("appCode") != "App") {
         window.location.href = "index.html";
         return;
       }
