@@ -73,7 +73,7 @@
     // -------------------------------------------------
     onAuthStateChanged(auth, (user) => {
       setTimeout(() => {   // small delay for smooth animation
-        if (user) {
+        if (user || localStorage.getItem("appCode") == "App" && localStorage.getItem("uid") && localStorage.getItem("displayName") && localStorage.getItem("email")  && localStorage.getItem("photoUrl")) {
           window.location.href = "dashboard.html";
         } else {
           window.location.href = "index.html";
