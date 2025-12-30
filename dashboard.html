@@ -185,7 +185,21 @@
     // -------------------------------
     async function loadCourses() {
       const user = auth.currentUser;
-      if (!user) return;
+      if (!user){
+        if (localStorage.getItem("appCode") === "App") {
+          // Assign user object from localStorage
+          user = {
+            uid: localStorage.getItem("uid"),
+            displayName: localStorage.getItem("displayName"),
+            email: localStorage.getItem("email"),
+            photoURL: localStorage.getItem("photoUrl")
+          };
+        } else {
+          // No Firebase user and no appCode -> redirect to login
+          window.location.href = "index.html";
+          return;
+        }
+      }
 
       // Get user level
       const userRef = doc(db, "users", user.uid);

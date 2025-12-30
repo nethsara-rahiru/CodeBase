@@ -186,7 +186,7 @@
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        if (localStorage.getItem("appCode") === "App") {
+        if (localStorage.getItem("appCode") == "App") {
           // Assign user object from localStorage
           user = {
             uid: localStorage.getItem("uid"),
