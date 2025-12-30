@@ -183,10 +183,15 @@
     // -------------------------------
     async function loadCourses() {
       const user = auth.currentUser;
-      if (!user) return;
+      if (!user && localStorage.getItem("appCode") != "App") return;
 
       // Get user level
-      const userRef = doc(db, "users", user.uid);
+      if(localStorage.getItem("appCode")){
+        const userRef = doc(db, "users", localStorage.getItem("uid"));
+      }
+      else{
+        const userRef = doc(db, "users", user.uid);
+      }
       const userSnap = await getDoc(userRef);
       const userLevel = userSnap.data().level; // "1" / "2" / "3" / "4"
 
