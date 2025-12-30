@@ -151,17 +151,19 @@
   <div class="content" id="contentContainer" style="display:none;"></div>
 
   <script type="module">
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut }
+      from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+
+    import { getFirestore, doc, getDoc, collection, getDocs }
+      from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
     import { app } from "./assets/js/firebase.js";
 
-    const auth = getAuth(app);
+    const auth = getAuth();
     const db = getFirestore(app);
 
     const loading = document.getElementById("loading");
     const contentContainer = document.getElementById("contentContainer");
-    const userPhoto = document.getElementById("userPhoto");
-    const userName = document.getElementById("userName");
 
     const selectedCourseId = localStorage.getItem("selectedCourseId");
 
@@ -171,84 +173,120 @@
       contentContainer.innerHTML = "<p>No course selected!</p>";
     }
 
-    // FAST LOAD: localStorage cache
-    const cachedUser = JSON.parse(localStorage.getItem("userData") || "{}");
-    if (cachedUser.name) {
-      userName.textContent = `${cachedUser.name} (${cachedUser.registrationNumber})`;
-      userPhoto.src = cachedUser.photoURL;
+    // FAST LOAD USING LOCALSTORAGE
+    let cachedUser = localStorage.getItem("userData");
+    if (cachedUser) {
+      try {
+        cachedUser = JSON.parse(cachedUser);
+        document.getElementById("userName").innerText =
+          `${cachedUser.name} (${cachedUser.registrationNumber})`;
+        document.getElementById("userPhoto").src = cachedUser.photoURL;
+      } catch {}
     }
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        window.location.href = "index.html";
-        return;
+        if (localStorage.getItem("appCode") === "App") {
+          // Assign user object from localStorage
+          user = {
+            uid: localStorage.getItem("uid"),
+            displayName: localStorage.getItem("displayName"),
+            email: localStorage.getItem("email"),
+            photoURL: localStorage.getItem("photoUrl")
+          };
+        } else {
+          // No Firebase user and no appCode -> redirect to login
+          window.location.href = "index.html";
+          return;
+        }
       }
 
-      // Fetch user data
       const userRef = doc(db, "users", user.uid);
       const snap = await getDoc(userRef);
+
       if (!snap.exists()) {
         window.location.href = "register.html";
         return;
       }
 
       const data = snap.data();
-      userName.textContent = `${data.name} (${data.registrationNumber})`;
-      userPhoto.src = user.photoURL || "";
 
-      // Cache user data
+      // Update UI
+      document.getElementById("userName").innerText =
+        `${data.name} (${data.registrationNumber})`;
+      document.getElementById("userPhoto").src = user.photoURL;
+
+      // Cache for fast load
       localStorage.setItem("userData", JSON.stringify({
         name: data.name,
         registrationNumber: data.registrationNumber,
-        photoURL: user.photoURL || ""
+        photoURL: user.photoURL
       }));
 
-      // Load course content
       loadContent();
     });
 
     async function loadContent() {
-      if (!selectedCourseId) return;
-
       const contentRef = collection(db, "courses", selectedCourseId, "content");
       const contentSnap = await getDocs(contentRef);
 
+      contentContainer.innerHTML = "";
       loading.style.display = "none";
       contentContainer.style.display = "grid";
-      contentContainer.innerHTML = "";
 
       if (contentSnap.empty) {
         contentContainer.innerHTML = "<p>No content found.</p>";
         return;
       }
 
-      const items = contentSnap.docs.map(docItem => ({
-        id: docItem.id,
-        title: docItem.data().tittle || docItem.id,
-        description: docItem.data().description || ""
-      }));
+      const items = [];
 
-      // SORT: numbers first, then alphabetically
-      items.sort((a, b) => {
-        const numA = parseInt(a.title);
-        const numB = parseInt(b.title);
-        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-        if (!isNaN(numA)) return -1;
-        if (!isNaN(numB)) return 1;
-        return a.title.localeCompare(b.title);
+      contentSnap.forEach(docItem => {
+        const c = docItem.data();
+        items.push({
+          id: docItem.id,
+          title: c.tittle,
+          description: c.description || ""
+        });
       });
 
-      // Render content cards
+      // SORTING LOGIC
+      items.sort((a, b) => {
+        // Extract leading numbers: "01 - Something"
+        const numA = parseInt(a.title);
+        const numB = parseInt(b.title);
+
+        const isNumA = !isNaN(numA);
+        const isNumB = !isNaN(numB);
+
+        if (isNumA && isNumB) {
+          return numA - numB;               // numeric sort
+        }
+
+        if (isNumA && !isNumB) return -1;    // numbers first
+        if (!isNumA && isNumB) return 1;
+
+        return a.title.localeCompare(b.title); // normal alphabetical
+      });
+
+      // RENDER CARDS
       items.forEach(item => {
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `<h3>${item.title}</h3><p>${item.description}</p>`;
+
+        card.innerHTML = `
+          <h3>${item.title}</h3>
+          <p>${item.description}</p>
+        `;
+
         card.addEventListener("click", () => {
           localStorage.setItem("selectedContentId", item.id);
           window.location.href = "resources.html";
         });
+
         contentContainer.appendChild(card);
       });
+
     }
 
     document.getElementById("logoutBtn").addEventListener("click", () => {
