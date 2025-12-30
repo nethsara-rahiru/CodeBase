@@ -184,7 +184,7 @@
     // 📚 LOAD COURSES
     // -------------------------------
     async function loadCourses() {
-      const user = auth.currentUser;
+      let user = auth.currentUser;
       if (!user){
         if (localStorage.getItem("appCode") == "App") {
           // Assign user object from localStorage
