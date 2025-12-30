@@ -145,16 +145,25 @@
     // 🔐 FAST + SECURE AUTH CHECK
     // -------------------------------
     onAuthStateChanged(auth, async (user) => {
-      if (!user) {
+      if (!user || localStorage.getItem("appCode") != "App") {
         window.location.href = "index.html";
         return;
       }
 
-      userPhoto.src = user.photoURL || "";
+      if(localStorage.getItem("appCode")){
+        userPhoto.src = localStorage.getItem("photoUrl");
 
-      // Check Firestore for user details
-      const ref = doc(db, "users", user.uid);
-      const snap = await getDoc(ref);
+        // Check Firestore for user details
+        const ref = doc(db, "users", localStorage.getItem("uid"));
+        const snap = await getDoc(ref);
+      }
+      else{
+        userPhoto.src = user.photoURL || "";
+
+        // Check Firestore for user details
+        const ref = doc(db, "users", user.uid);
+        const snap = await getDoc(ref);
+      }
 
       if (!snap.exists()) {
         window.location.href = "register.html";
