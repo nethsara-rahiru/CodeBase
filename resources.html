@@ -150,157 +150,163 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.min.js"></script>
   <script type="module">
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-    import { app } from "./assets/js/firebase.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+  import { app } from "./assets/js/firebase.js";
 
-    const auth = getAuth();
-    const db = getFirestore(app);
-    const resourcesContainer = document.getElementById("resourcesContainer");
-    const selectedCourseId = localStorage.getItem("selectedCourseId");
-    const selectedContentId = localStorage.getItem("selectedContentId");
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const resourcesContainer = document.getElementById("resourcesContainer");
+  const userPhoto = document.getElementById("userPhoto");
+  const userName = document.getElementById("userName");
 
-    function encodeId(id) { return btoa(id); }
-    function decodeId(encoded) { return atob(encoded); }
+  const selectedCourseId = localStorage.getItem("selectedCourseId");
+  const selectedContentId = localStorage.getItem("selectedContentId");
 
-    async function fetchImage(url) {
-      try {
-        const res = await fetch(url);
-        const blob = await res.blob();
-        return URL.createObjectURL(blob);
-      } catch (e) {
-        console.error("Image fetch failed:", e);
-        return "assets/img/default-thumbnail.png";
-      }
+  // Helper: Encode / decode IDs
+  const encodeId = id => btoa(id);
+  const decodeId = encoded => atob(encoded);
+
+  // Helper: Fetch image safely
+  async function fetchImage(url) {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      return URL.createObjectURL(blob);
+    } catch (e) {
+      console.error("Image fetch failed:", e);
+      return "assets/img/default-thumbnail.png";
+    }
+  }
+
+  // Redirect if no selection
+  if (!selectedCourseId || !selectedContentId) {
+    resourcesContainer.innerHTML = "<p style='opacity:0.7;'>No content selected!</p>";
+  }
+
+  // Auth check
+  onAuthStateChanged(auth, async user => {
+    if (!user) { window.location.href = "index.html"; return; }
+
+    // Load user data
+    const userRef = doc(db, "users", user.uid);
+    const snap = await getDoc(userRef);
+    if (!snap.exists()) { window.location.href = "register.html"; return; }
+
+    const data = snap.data();
+    userName.textContent = `${data.name} (${data.registrationNumber})`;
+    userPhoto.src = user.photoURL || "assets/img/default.png";
+
+    // Load resources
+    loadResources();
+  });
+
+  async function loadResources() {
+    const resourcesRef = collection(db, "courses", selectedCourseId, "content", selectedContentId, "resources");
+    const resourcesSnap = await getDocs(resourcesRef);
+
+    resourcesContainer.innerHTML = "";
+    if (resourcesSnap.empty) {
+      resourcesContainer.innerHTML = "<p style='opacity:0.7;'>No resources found.</p>";
+      return;
     }
 
-    if (!selectedCourseId || !selectedContentId) {
-      resourcesContainer.innerHTML = "<p style='opacity:0.7;'>No content selected!</p>";
-    }
+    // Collect all items
+    const items = resourcesSnap.docs.map(docItem => ({
+      id: docItem.id,
+      title: docItem.data().title || docItem.id,
+      type: docItem.data().type || "link",
+      link: docItem.data().link || ""
+    }));
 
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) { window.location.href = "index.html"; return; }
-
-      const userRef = doc(db, "users", user.uid);
-      const snap = await getDoc(userRef);
-      if (!snap.exists()) { window.location.href = "register.html"; return; }
-
-      const data = snap.data();
-      document.getElementById("userName").innerText = `${data.name} (${data.registrationNumber})`;
-      document.getElementById("userPhoto").src = user.photoURL || "assets/img/default.png";
-
-      const resourcesRef = collection(db, "courses", selectedCourseId, "content", selectedContentId, "resources");
-      const resourcesSnap = await getDocs(resourcesRef);
-
-      resourcesContainer.innerHTML = "";
-      if (resourcesSnap.empty) {
-        resourcesContainer.innerHTML = "<p style='opacity:0.7;'>No resources found.</p>";
-      } else {
-          // NEW: Collect all items in an array
-          const items = [];
-
-          resourcesSnap.forEach(docItem => {
-            const r = docItem.data();
-            items.push({
-              id: docItem.id,
-              title: r.title,
-              type: r.type,
-              link: r.link
-            });
-          });
-
-          // --- SORTING LOGIC ---
-          items.sort((a, b) => {
-            const numA = parseInt(a.title);
-            const numB = parseInt(b.title);
-
-            const isNumA = !isNaN(numA);
-            const isNumB = !isNaN(numB);
-
-            if (isNumA && isNumB) return numA - numB;
-            if (isNumA && !isNumB) return -1;
-            if (!isNumA && isNumB) return 1;
-
-            return a.title.localeCompare(b.title);
-          });
-
-          // --- RENDER CARDS AFTER SORTING ---
-          for (const item of items) {
-            const r = item;
-            const card = document.createElement("div");
-            card.className = "card";
-
-            let thumbUrl = "assets/img/default-thumbnail.png";
-            let videoIdEncoded = null;
-
-            if (r.type.toLowerCase() === "video") {
-              const ytMatch = r.link.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([\w-]+)/);
-              if (ytMatch) {
-                videoIdEncoded = encodeId(ytMatch[1]);
-                const ytThumbUrl = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
-                thumbUrl = await fetchImage(ytThumbUrl);
-              }
-            } 
-            else if (r.type.toLowerCase() === "link") {
-              try {
-                const url = new URL(r.link);
-                thumbUrl = await fetchImage(`https://www.google.com/s2/favicons?sz=64&domain=${url.hostname}`);
-              } catch {}
-            }
-
-            card.innerHTML = `
-              <div class="card-left">
-                <div class="info">
-                  <h3>${r.title}</h3>
-                  <p>Type: ${r.type}</p>
-                </div>
-              </div>
-              <button class="open-btn">Open</button>
-              <div class="thumb" style="background:url('${thumbUrl}') center/cover no-repeat;"></div>
-            `;
-
-            // Thumbnail animation
-            const thumbDiv = card.querySelector('.thumb');
-            setTimeout(() => thumbDiv.classList.add('show'), 100);
-
-            // Open button logic
-            card.querySelector(".open-btn").addEventListener("click", () => {
-              if (!r.link) return;
-              const type = r.type.toLowerCase();
-
-              if (type === "video" && videoIdEncoded) {
-                const videoId = decodeId(videoIdEncoded);
-                localStorage.setItem("videoLink", `https://www.youtube.com/watch?v=${videoId}`);
-                window.location.href = "player.html";
-                return;
-              }
-
-              if (type === "pdf") {
-                let fileId = null;
-                const m1 = r.link.match(/\/file\/d\/([a-zA-Z0-9_-]+)\//);
-                if (m1) fileId = m1[1];
-                const m2 = r.link.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-                if (m2) fileId = m2[1];
-                if (!fileId) { alert("Invalid PDF link format!"); return; }
-                window.location.href = `reader.html?id=${fileId}`;
-                return;
-              }
-
-              window.open(r.link, "_blank");
-            });
-
-            resourcesContainer.appendChild(card);
-          }
-
-      }
+    // Sort: numbers first, then alphabetically
+    items.sort((a, b) => {
+      const numA = parseInt(a.title);
+      const numB = parseInt(b.title);
+      const isNumA = !isNaN(numA);
+      const isNumB = !isNaN(numB);
+      if (isNumA && isNumB) return numA - numB;
+      if (isNumA && !isNumB) return -1;
+      if (!isNumA && isNumB) return 1;
+      return a.title.localeCompare(b.title);
     });
 
-    document.getElementById("logoutBtn").addEventListener("click", () => {
-      signOut(auth).then(() => {
-        localStorage.clear();
-        window.location.href = "index.html";
+    // Render cards
+    for (const r of items) {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      let thumbUrl = "assets/img/default-thumbnail.png";
+      let videoIdEncoded = null;
+
+      // Thumbnail logic
+      if (r.type.toLowerCase() === "video") {
+        const ytMatch = r.link.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([\w-]+)/);
+        if (ytMatch) {
+          videoIdEncoded = encodeId(ytMatch[1]);
+          const ytThumbUrl = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+          thumbUrl = await fetchImage(ytThumbUrl);
+        }
+      } else if (r.type.toLowerCase() === "link") {
+        try {
+          const url = new URL(r.link);
+          thumbUrl = await fetchImage(`https://www.google.com/s2/favicons?sz=64&domain=${url.hostname}`);
+        } catch {}
+      }
+
+      card.innerHTML = `
+        <div class="card-left">
+          <div class="info">
+            <h3>${r.title}</h3>
+            <p>Type: ${r.type}</p>
+          </div>
+        </div>
+        <button class="open-btn">Open</button>
+        <div class="thumb" style="background:url('${thumbUrl}') center/cover no-repeat;"></div>
+      `;
+
+      // Animate thumbnail
+      const thumbDiv = card.querySelector('.thumb');
+      setTimeout(() => thumbDiv.classList.add('show'), 100);
+
+      // Open button
+      card.querySelector(".open-btn").addEventListener("click", () => {
+        if (!r.link) return;
+
+        const type = r.type.toLowerCase();
+        if (type === "video" && videoIdEncoded) {
+          const videoId = decodeId(videoIdEncoded);
+          localStorage.setItem("videoLink", `https://www.youtube.com/watch?v=${videoId}`);
+          window.location.href = "player.html";
+          return;
+        }
+
+        if (type === "pdf") {
+          let fileId = null;
+          const m1 = r.link.match(/\/file\/d\/([a-zA-Z0-9_-]+)\//);
+          const m2 = r.link.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+          if (m1) fileId = m1[1];
+          if (m2) fileId = m2[1];
+          if (!fileId) { alert("Invalid PDF link format!"); return; }
+          window.location.href = `reader.html?id=${fileId}`;
+          return;
+        }
+
+        window.open(r.link, "_blank");
       });
+
+      resourcesContainer.appendChild(card);
+    }
+  }
+
+  // Logout
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    signOut(auth).then(() => {
+      localStorage.clear();
+      window.location.href = "index.html";
     });
-  </script>
+  });
+</script>
+
 </body>
 </html>
