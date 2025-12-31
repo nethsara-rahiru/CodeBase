@@ -73,10 +73,15 @@
     // -------------------------------------------------
     onAuthStateChanged(auth, (user) => {
       setTimeout(() => {   // small delay for smooth animation
-        if (user || localStorage.getItem("appCode") == "App" && localStorage.getItem("uid") && localStorage.getItem("displayName") && localStorage.getItem("email")  && localStorage.getItem("photoUrl")) {
+        if (user) {
           window.location.href = "dashboard.html";
         } else {
-          window.location.href = "index.html";
+          if(localStorage.getItem("appCode") == "App" && localStorage.getItem("uid") && localStorage.getItem("displayName") && localStorage.getItem("email")  && localStorage.getItem("photoUrl")){
+            
+          }
+          else{
+            window.location.href = "index.html";
+          }
         }
       }, 900);
     });
