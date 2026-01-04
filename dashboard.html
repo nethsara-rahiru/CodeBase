@@ -113,7 +113,7 @@
 
 <body>
 
-  <div class="navbar">
+  <div class="navbar" id="navbar">
     <div class="brand">CodeBase Dashboard</div>
 
     <div class="profile">
@@ -140,6 +140,13 @@
     const courseContainer = document.getElementById("courseContainer");
     const userName = document.getElementById("userName");
     const userPhoto = document.getElementById("userPhoto");
+
+    const navbar = document.getElementById("navbar");
+
+    // If opened inside app (appCode exists), remove navbar
+    if (localStorage.getItem("appCode")) {
+      navbar.style.display = "none"; // safely remove navbar
+    }
 
     // -------------------------------
     // 🔐 FAST + SECURE AUTH CHECK
