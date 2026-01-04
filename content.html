@@ -127,7 +127,7 @@
 <body>
 
   <!-- NAVBAR -->
-  <div class="navbar">
+  <div class="navbar" id="navbar">
     <div class="brand">
       <button onclick="history.back()" style="
       padding: 8px 16px;
@@ -166,6 +166,13 @@
     const contentContainer = document.getElementById("contentContainer");
 
     const selectedCourseId = localStorage.getItem("selectedCourseId");
+
+    const navbar = document.getElementById("navbar");
+
+    // If opened inside app (appCode exists), remove navbar
+    if (localStorage.getItem("appCode")) {
+      navbar?.remove(); // safely remove navbar
+    }
 
     if (!selectedCourseId) {
       loading.style.display = "none";

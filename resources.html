@@ -125,7 +125,7 @@
 </head>
 
 <body>
-  <div class="navbar">
+  <div class="navbar" id="navbar">
     <div class="brand">
       <button onclick="history.back()" style="
       padding: 8px 16px;
@@ -162,6 +162,13 @@
 
   const selectedCourseId = localStorage.getItem("selectedCourseId");
   const selectedContentId = localStorage.getItem("selectedContentId");
+
+  const navbar = document.getElementById("navbar");
+
+  // If opened inside app (appCode exists), remove navbar
+  if (localStorage.getItem("appCode")) {
+    navbar?.remove(); // safely remove navbar
+  }  
 
   // Helper: Encode / decode IDs
   const encodeId = id => btoa(id);
