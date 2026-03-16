@@ -1,154 +1,377 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Course Content | CodeBase</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
 
   <style>
-    body {
+    :root {
+      --bg-dark: #0f172a;
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --accent-primary: #6366f1;
+      --accent-secondary: #ec4899;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
       margin: 0;
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #111827, #1e3a8a);
-      color: white;
-      height: 100vh;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-area {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateX(-2px);
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-profile img {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      border: 1px solid var(--accent-primary);
+    }
+
+    .user-info {
       display: flex;
       flex-direction: column;
     }
 
-    .navbar {
-      display: flex;
-      justify-content: space-between;
-      padding: 18px 20px;
-      background: rgba(0, 0, 0, 0.3);
-      backdrop-filter: blur(10px);
-      align-items: center;
-    }
-
-    .brand {
-      font-size: 22px;
-      font-weight: 600;
-    }
-
-    .profile {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .profile img {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      border: 2px solid #4f46e5;
+    .user-name {
+      font-size: 0.875rem;
+      font-weight: 700;
     }
 
     .logout-btn {
+      margin-left: 12px;
       padding: 8px 16px;
-      background: #ef4444;
-      border: none;
-      border-radius: 6px;
-      color: white;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    .logout-btn:hover { background: #dc2626; }
-
-    .content {
-      padding: 40px;
-      gap: 20px;
-      overflow-y: auto;
-    }
-
-    .card {
-      padding: 20px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(8px);
-      height: 35px;
-      transition: 0.3s;
-      cursor: pointer;
-      text-align: left;
-      overflow: hidden;
-    }
-
-    .card:hover {
-      background: rgba(255, 255, 255, 0.15);
-      /*transform: translateY(-4px);*/
-    }
-
-    .card h3 {
-      margin: 0;
-      font-size: 20px;
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 10px;
       font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
     }
 
-    .card p {
-      margin-top: 6px;
-      font-size: 14px;
-      opacity: 0.8;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .logout-btn:hover {
+      background: #ef4444;
+      color: white;
     }
 
-    /* LOADING ANIMATION */
-    .loader {
-      margin: 50px auto;
-      border: 4px solid rgba(255,255,255,0.3);
-      border-top: 4px solid #ffffff;
+    /* Content Area */
+    .main-container {
+      padding: 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    /* Skeleton Loading */
+    .skeleton {
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.03) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 12px;
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: -200% 0;
+      }
+
+      100% {
+        background-position: 200% 0;
+      }
+    }
+
+    /* Breadcrumbs */
+    .breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      padding: 0 40px;
+      max-width: 1200px;
+      margin: 20px auto 0;
+    }
+
+    .breadcrumbs a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .breadcrumbs a:hover {
+      color: var(--accent-primary);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 40px;
+      background: var(--glass-bg);
+      border: 1px dashed var(--glass-border);
+      border-radius: 24px;
+      color: var(--text-muted);
+      grid-column: 1 / -1;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .item-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 32px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+      animation: fadeInUp 0.5s ease backwards;
+    }
+
+    .item-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .item-card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      transform: translateY(-4px);
+      border-color: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.3);
+    }
+
+    .item-card:hover::before {
+      opacity: 1;
+    }
+
+    .item-card h3 {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .item-card p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Premium Loader */
+    .premium-loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+    }
+
+    .premium-spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(255, 255, 255, 0.05);
+      border-top: 3px solid var(--accent-primary);
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 0.8s linear infinite;
+      animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      margin-bottom: 24px;
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+    }
+
+    .loading-status-text {
+      color: #ffffff !important;
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      text-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+      opacity: 1 !important;
+      display: block !important;
     }
 
     @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
-    /* MOBILE FIXES */
-    @media (max-width: 600px) {
-      .navbar { flex-direction: column; gap: 10px; }
-      .brand { font-size: 18px; }
-      #userName { font-size: 14px; }
-      .card h3 { font-size: 16px; }
-      .card p { font-size: 12px; }
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 640px) {
+      header {
+        padding: 16px 20px;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .main-container {
+        padding: 20px;
+      }
+
+      .user-info {
+        display: none;
+      }
+    }
+
+    @media (max-width: 768px) {
+      header {
+        padding: 16px 20px;
+      }
+
+      .brand-area h1 {
+        font-size: 1.25rem;
+      }
+
+      .main-container {
+        padding: 24px 20px;
+      }
+
+      .course-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .user-info {
+        display: none;
+      }
     }
   </style>
-
 </head>
+
 <body>
 
-  <!-- NAVBAR -->
-  <div class="navbar" id="navbar">
-    <div class="brand">
-      <button onclick="history.back()" style="
-      padding: 8px 16px;
-      margin-right: 10px;
-      background:#2563eb;
-      border:none;
-      color:white;
-      border-radius:6px;
-      cursor:pointer;">Back</button>
-      Course Content
+  <header id="navbar">
+    <div class="brand-area">
+      <button class="back-btn" onclick="history.back()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Back
+      </button>
+      <h1>Course Content</h1>
     </div>
-    <div class="profile">
+    <div class="user-profile">
       <img id="userPhoto" src="" alt="">
-      <span id="userName">Loading...</span>
+      <div class="user-info">
+        <span class="user-name" id="userName">User</span>
+      </div>
       <button class="logout-btn" id="logoutBtn">Logout</button>
     </div>
+  </header>
+
+  <div class="breadcrumbs" id="breadcrumbArea">
+    <a href="dashboard.html">Home</a>
+    <span id="breadcrumbCourse"></span>
   </div>
 
-  <!-- CONTENT AREA -->
-  <div id="loading" class="loader"></div>
-  <div class="content" id="contentContainer" style="display:none;"></div>
+  <main class="main-container">
+    <div id="loading" class="premium-loader">
+      <div class="premium-spinner"></div>
+      <div class="loading-status-text">Loading Resources...</div>
+    </div>
+    <div class="content-grid" id="contentContainer" style="display:none;"></div>
+  </main>
 
   <script type="module">
     import { getAuth, onAuthStateChanged, signOut }
@@ -187,14 +410,34 @@
         cachedUser = JSON.parse(cachedUser);
         document.getElementById("userName").innerText =
           `${cachedUser.name} (${cachedUser.registrationNumber})`;
-        document.getElementById("userPhoto").src = cachedUser.photoURL;
-      } catch {}
+        document.getElementById("userPhoto").src = cachedUser.photoURL || "assets/img/default.png";
+      } catch { }
     }
 
-    onAuthStateChanged(auth, async (user) => {
+    // Attempt to load from cache first
+    let cachedContent = localStorage.getItem(`content_${selectedCourseId}`);
+    if (cachedContent) {
+      try {
+        const parsed = JSON.parse(cachedContent);
+        // Minimal fake snap object for renderItems
+        const fakeSnap = {
+          docs: parsed.map(item => ({
+            id: item.id,
+            data: () => item.data
+          })),
+          empty: parsed.length === 0
+        };
+        renderItems(fakeSnap);
+      } catch (e) {
+        console.warn("Failed to load cached content", e);
+      }
+    }
+
+    let contentPromise = loadContent();
+
+    onAuthStateChanged(auth, async user => {
       if (!user) {
         if (localStorage.getItem("appCode") == "App") {
-          // Assign user object from localStorage
           user = {
             uid: localStorage.getItem("uid"),
             displayName: localStorage.getItem("displayName"),
@@ -202,98 +445,112 @@
             photoURL: localStorage.getItem("photoUrl")
           };
         } else {
-          // No Firebase user and no appCode -> redirect to login
           window.location.href = "index.html";
           return;
         }
       }
 
-      const userRef = doc(db, "users", user.uid);
-      const snap = await getDoc(userRef);
+      try {
+        // Parallelize User Doc and Content Fetch
+        const [userSnap, contentSnap] = await Promise.all([
+          getDoc(doc(db, "users", user.uid)),
+          contentPromise
+        ]);
 
-      if (!snap.exists()) {
-        window.location.href = "register.html";
-        return;
+        if (!userSnap.exists()) { window.location.href = "register.html"; return; }
+
+        const data = userSnap.data();
+
+        // Update UI
+        document.getElementById("userName").innerText =
+          `${data.name} (${data.registrationNumber})`;
+        document.getElementById("userPhoto").src = user.photoURL || "assets/img/default.png";
+
+        // Cache user for fast load
+        localStorage.setItem("userData", JSON.stringify({
+          name: data.name,
+          registrationNumber: data.registrationNumber,
+          photoURL: user.photoURL
+        }));
+
+        // Render the fresh content
+        renderItems(contentSnap);
+
+        // Cache fresh content
+        const toCache = contentSnap.docs.map(d => ({ id: d.id, data: d.data() }));
+        localStorage.setItem(`content_${selectedCourseId}`, JSON.stringify(toCache));
+      } catch (err) {
+        console.error("Content load failed:", err);
       }
-
-      const data = snap.data();
-
-      // Update UI
-      document.getElementById("userName").innerText =
-        `${data.name} (${data.registrationNumber})`;
-      document.getElementById("userPhoto").src = user.photoURL;
-
-      // Cache for fast load
-      localStorage.setItem("userData", JSON.stringify({
-        name: data.name,
-        registrationNumber: data.registrationNumber,
-        photoURL: user.photoURL
-      }));
-
-      loadContent();
     });
 
     async function loadContent() {
       const contentRef = collection(db, "courses", selectedCourseId, "content");
-      const contentSnap = await getDocs(contentRef);
+      return getDocs(contentRef);
+    }
 
-      contentContainer.innerHTML = "";
-      loading.style.display = "none";
-      contentContainer.style.display = "grid";
+    const startTime = Date.now();
 
-      if (contentSnap.empty) {
-        contentContainer.innerHTML = "<p>No content found.</p>";
-        return;
-      }
+    function renderItems(contentSnap) {
+      if (!selectedCourseId) return;
+
+      // Update breadcrumb with course ID
+      document.getElementById("breadcrumbCourse").textContent = ` > ${selectedCourseId}`;
 
       const items = [];
-
       contentSnap.forEach(docItem => {
         const c = docItem.data();
         items.push({
           id: docItem.id,
-          title: c.tittle,
+          title: c.title || c.tittle || "Untitled",
           description: c.description || ""
         });
       });
 
       // SORTING LOGIC
       items.sort((a, b) => {
-        // Extract leading numbers: "01 - Something"
-        const numA = parseInt(a.title);
-        const numB = parseInt(b.title);
-
+        const titleA = a.title || "";
+        const titleB = b.title || "";
+        const numA = parseInt(titleA);
+        const numB = parseInt(titleB);
         const isNumA = !isNaN(numA);
         const isNumB = !isNaN(numB);
-
-        if (isNumA && isNumB) {
-          return numA - numB;               // numeric sort
-        }
-
-        if (isNumA && !isNumB) return -1;    // numbers first
-        if (!isNumA && isNumB) return 1;
-
-        return a.title.localeCompare(b.title); // normal alphabetical
+        if (isNumA && isNumB) return numA - numB;
+        return titleA.localeCompare(titleB);
       });
 
-      // RENDER CARDS
-      items.forEach(item => {
-        const card = document.createElement("div");
-        card.className = "card";
+      const elapsed = Date.now() - startTime;
+      const delay = Math.max(0, 800 - elapsed);
 
-        card.innerHTML = `
-          <h3>${item.title}</h3>
-          <p>${item.description}</p>
-        `;
+      setTimeout(() => {
+        loading.style.opacity = "0";
+        setTimeout(() => {
+          loading.style.display = "none";
+          contentContainer.innerHTML = "";
+          contentContainer.style.display = "grid";
 
-        card.addEventListener("click", () => {
-          localStorage.setItem("selectedContentId", item.id);
-          window.location.href = "resources.html";
-        });
+          if (items.length === 0) {
+            contentContainer.innerHTML = `
+              <div class="empty-state">
+                <p>No modules found for this course.</p>
+              </div>`;
+            return;
+          }
 
-        contentContainer.appendChild(card);
-      });
-
+          items.forEach((item, i) => {
+            const card = document.createElement("div");
+            card.className = "item-card";
+            card.style.animationDelay = `${i * 0.05}s`;
+            card.innerHTML = `<h3>${item.title}</h3><p>${item.description}</p>`;
+            card.addEventListener("click", () => {
+              localStorage.setItem("selectedContentId", item.id);
+              localStorage.setItem("selectedContentTitle", item.title);
+              window.location.href = "resources.html";
+            });
+            contentContainer.appendChild(card);
+          });
+        }, 300);
+      }, delay);
     }
 
     document.getElementById("logoutBtn").addEventListener("click", () => {
@@ -305,4 +562,5 @@
   </script>
 
 </body>
+
 </html>

@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Course Editor | CodeBase Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #6366f1;
+            --accent-secondary: #ec4899;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 48px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 24px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            color: var(--text-main);
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            backdrop-filter: blur(10px);
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(-4px);
+            border-color: var(--accent-primary);
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--text-main) 30%, var(--accent-secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        .admin-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            padding: 40px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            animation: scaleIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+        }
+
+        .module-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            margin-bottom: 24px;
+            padding: 32px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: fadeInUp 0.5s ease backwards;
+            backdrop-filter: blur(10px);
+        }
+
+        .module-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: var(--accent-primary);
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .module-header h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .resource-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 16px 24px;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            transition: all 0.2s ease;
+        }
+
+        .resource-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--accent-secondary);
+        }
+
+        .type-badge {
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--accent-primary);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            text-transform: uppercase;
+        }
+
+        /* Forms Styling */
+        .grid-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+
+        input,
+        select {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: white;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, var(--accent-primary), #4f46e5);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.5);
+        }
+
+        .action-btn.secondary {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            box-shadow: none;
+        }
+
+        .action-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--text-muted);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(239, 68, 68, 0.4);
+        }
+
+        /* Modal styling */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6);
+            transform: scale(0.9);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal.active .modal-content {
+            transform: scale(1);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <a href="admin.html" class="back-btn">← Back to Dashboard</a>
+                <h1 id="courseTitle">Loading Course...</h1>
+                <p id="courseIdDisplay" style="color: var(--text-muted); margin-top: 8px;"></p>
+            </div>
+        </header>
+
+        <!-- New Module Form -->
+        <div class="admin-card">
+            <div class="section-header">
+                <h2>Add New Module</h2>
+            </div>
+            <form id="moduleForm" class="grid-form">
+                <div class="form-group"><label>Title (e.g. 01 - Intro)</label><input type="text" id="moduleTitle"
+                        required></div>
+                <div class="form-group"><label>Description</label><input type="text" id="moduleDesc"></div>
+                <div class="form-group" style="justify-content: flex-end;"><button type="submit" class="action-btn">Add
+                        Module</button></div>
+            </form>
+        </div>
+
+        <div id="moduleList">
+            <!-- Dynamic Modules -->
+        </div>
+    </div>
+
+    <!-- Edit Module Modal -->
+    <div id="editModModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom:20px;">Edit Module</h2>
+            <div class="form-group" style="margin-bottom:15px;">
+                <label>Title</label>
+                <input type="text" id="editModTitle">
+            </div>
+            <div class="form-group" style="margin-bottom:25px;">
+                <label>Description</label>
+                <input type="text" id="editModDesc">
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:12px;">
+                <button class="action-btn secondary" onclick="closeEditModModal()">Cancel</button>
+                <button class="action-btn" id="saveModBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Resource Modal -->
+    <div id="editResModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom:20px;">Edit Resource</h2>
+            <div class="form-group" style="margin-bottom:15px;">
+                <label>Title</label>
+                <input type="text" id="editResTitle">
+            </div>
+            <div class="form-group" style="margin-bottom:15px;">
+                <label>URL</label>
+                <input type="url" id="editResLink">
+            </div>
+            <div class="form-group" style="margin-bottom:15px;">
+                <label>Course</label>
+                <select id="editResCourse" onchange="loadEditResModules(this.value)"
+                    style="width:100%; padding:8px; border-radius:4px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.2); color:white;">
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom:25px;">
+                <label>Module</label>
+                <select id="editResModule"
+                    style="width:100%; padding:8px; border-radius:4px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.2); color:white;">
+                </select>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:12px;">
+                <button class="action-btn secondary" onclick="closeEditResModal()">Cancel</button>
+                <button class="action-btn" id="saveResBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, getDocs, collection, setDoc, deleteDoc, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+        import { app } from "./assets/js/firebase.js";
+
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const urlParams = new URLSearchParams(window.location.search);
+        const courseId = urlParams.get("id");
+
+        if (!courseId) window.location.href = "admin.html";
+
+        let currentPerms = {};
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) { window.location.href = "index.html"; return; }
+            const snap = await getDoc(doc(db, "users", user.uid));
+            if (!snap.exists() || !["owner", "admin", "editor"].includes(snap.data().role)) {
+                window.location.href = "access-denied.html"; return;
+            }
+
+            const userData = snap.data();
+
+            if (userData.role !== "owner") {
+                const roleSnap = await getDoc(doc(db, "roles", userData.customRoleId || "none"));
+                if (roleSnap.exists()) {
+                    currentPerms = roleSnap.data().permissions || {};
+                } else {
+                    window.location.href = "access-denied.html"; return;
+                }
+
+                const courseYear = courseId[2];
+                const yearMatch = (currentPerms.allowedYears || []).includes(courseYear);
+                const courseMatch = (currentPerms.allowedCourses || []).includes(courseId);
+
+                if (!yearMatch && !courseMatch || !currentPerms.canManageCourses) {
+                    window.location.href = "access-denied.html"; return;
+                }
+            } else {
+                currentPerms = { isOwner: true };
+            }
+
+            loadCourseInfo();
+            loadModules();
+        });
+
+        async function loadCourseInfo() {
+            const snap = await getDoc(doc(db, "courses", courseId));
+            if (snap.exists()) {
+                document.getElementById("courseTitle").textContent = snap.data().name;
+                document.getElementById("courseIdDisplay").textContent = `ID: ${courseId}`;
+            }
+        }
+
+        let allModules = [];
+
+        async function loadModules() {
+            const snap = await getDocs(collection(db, "courses", courseId, "content"));
+            const host = document.getElementById("moduleList");
+            host.innerHTML = "";
+            allCurrentResources = []; // Reset global resource cache on each full load
+
+            allModules = [];
+            snap.forEach(d => allModules.push({ id: d.id, ...d.data() }));
+
+            // Sort modules by title numeric prefix - robustly handle title/tittle
+            allModules.sort((a, b) => {
+                const valA = a.title || a.tittle || "";
+                const valB = b.title || b.tittle || "";
+                return (parseInt(valA) || 0) - (parseInt(valB) || 0);
+            });
+
+            let i = 0;
+            for (const m of allModules) {
+                const div = document.createElement("div");
+                div.className = "module-item";
+                div.style.animationDelay = `${i * 0.05}s`;
+                i++;
+                div.innerHTML = `
+          <div class="module-header">
+            <div>
+              <h3>${m.title || m.tittle}</h3>
+              <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px;">${m.description || 'No description provided.'}</p>
+            </div>
+            <div style="display:flex; gap:12px; align-items:center;">
+                <button class="action-btn secondary" style="padding:8px 16px; font-size:0.8rem;" onclick="openEditModule('${m.id}')">Edit Module</button>
+                <button class="btn-danger" style="font-size:0.8rem;" onclick="deleteModule('${m.id}')">Delete</button>
+            </div>
+          </div>
+          
+          <div class="resource-list" id="res-${m.id}" style="margin: 24px 0; display: flex; flex-direction: column; gap: 12px; padding-top: 24px; border-top: 1px solid var(--glass-border);">
+            <p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; padding: 20px;">Loading resources...</p>
+          </div>
+
+          <div style="background: rgba(255,255,255,0.02); padding: 24px; border-radius: 20px; border: 1px solid var(--glass-border);">
+            <h4 style="font-size: 0.9rem; margin-bottom: 16px; color: var(--accent-primary); text-transform: uppercase; letter-spacing: 0.05em;">Quick Add Resource</h4>
+            <form onsubmit="addResource(event, '${m.id}')" class="grid-form">
+                <div class="form-group"><label>Title</label><input type="text" id="resTitle-${m.id}" placeholder="e.g. Lecture Notes" required></div>
+                <div class="form-group"><label>Type</label>
+                    <select id="resType-${m.id}">
+                        <option value="link">Link</option>
+                        <option value="pdf">PDF (Drive)</option>
+                        <option value="video">Video</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>URL</label><input type="url" id="resLink-${m.id}" placeholder="https://..." required></div>
+                <div class="form-group"><label>Creator Reg No</label><input type="text" id="resOwnerReg-${m.id}" placeholder="2022/ICT/..." required></div>
+                <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="resOriginal-${m.id}" style="width: 18px; height: 18px; margin: 0;">
+                    <label style="margin: 0; font-size: 0.85rem;">Original</label>
+                </div>
+                <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="resPinned-${m.id}" style="width: 18px; height: 18px; margin: 0;">
+                    <label style="margin: 0; font-size: 0.85rem;">Pin</label>
+                </div>
+                <div class="form-group" style="justify-content: flex-end; grid-column: 1 / -1; margin-top: 10px;">
+                    <button type="submit" class="action-btn" style="width: 100%;">Add to Module</button>
+                </div>
+            </form>
+          </div>
+        `;
+                host.appendChild(div);
+                await loadResources(m.id);
+            }
+        }
+
+        let allCurrentResources = []; // Store currently loaded resources to populate the modal
+
+        async function loadResources(moduleId) {
+            const snap = await getDocs(collection(db, "courses", courseId, "content", moduleId, "resources"));
+            const host = document.getElementById(`res-${moduleId}`);
+            host.innerHTML = "";
+
+            const resources = [];
+            snap.forEach(d => {
+                const resData = { id: d.id, ...d.data() };
+                resources.push(resData);
+                const existIdx = allCurrentResources.findIndex(x => x.id === d.id);
+                if (existIdx >= 0) allCurrentResources[existIdx] = resData;
+                else allCurrentResources.push(resData);
+            });
+            resources.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+
+
+
+            if (resources.length === 0) {
+                host.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted);">No resources yet.</p>';
+                return;
+            }
+
+            resources.forEach(r => {
+                const item = document.createElement("div");
+                item.className = "resource-item";
+                item.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <span class="type-badge">${r.type}</span>
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-weight:700; font-size: 1rem;">${r.title}</span>
+                ${r.isPinned ? '<span style="color: #f59e0b; font-size: 0.9rem;">📌</span>' : ''}
+              </div>
+              <a href="${r.link}" target="_blank" style="color:var(--accent-primary); font-size:0.8rem; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; margin-top: 2px;">
+                View Resource <span style="font-size: 0.7rem;">↗</span>
+              </a>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button class="action-btn secondary" style="padding:8px 14px; font-size:0.75rem; border-radius: 10px;" onclick="openEditResource('${moduleId}', '${r.id}')">Edit</button>
+            <button class="action-btn secondary" style="padding:8px 14px; font-size:0.75rem; border-radius: 10px; color: ${r.isPinned ? '#f59e0b' : 'inherit'}" onclick="togglePin('${moduleId}', '${r.id}', ${r.isPinned || false})">
+                ${r.isPinned ? 'Unpin' : 'Pin'}
+            </button>
+            <button class="btn-danger" style="margin-left: 8px; font-size: 0.75rem;" onclick="deleteResource('${moduleId}', '${r.id}')">Remove</button>
+          </div>
+        `;
+                host.appendChild(item);
+            });
+        }
+
+        document.getElementById("moduleForm").onsubmit = async (e) => {
+            e.preventDefault();
+            if (!currentPerms.isOwner && !currentPerms.canManageCourses) {
+                alert("Permission denied."); return;
+            }
+            const title = document.getElementById("moduleTitle").value;
+            const desc = document.getElementById("moduleDesc").value;
+
+            await addDoc(collection(db, "courses", courseId, "content"), {
+                title: title,
+                description: desc
+            });
+
+            e.target.reset();
+            loadModules();
+        };
+
+        window.addResource = async (e, moduleId) => {
+            e.preventDefault();
+            if (!currentPerms.isOwner && !currentPerms.canManageCourses) {
+                alert("Permission denied."); return;
+            }
+
+            const currentUser = auth.currentUser;
+            const userSnap = await getDoc(doc(db, "users", currentUser.uid));
+            const userName = userSnap.exists() ? userSnap.data().name : currentUser.displayName || "Unknown Admin";
+
+            const title = document.getElementById(`resTitle-${moduleId}`).value;
+            const type = document.getElementById(`resType-${moduleId}`).value;
+            const link = document.getElementById(`resLink-${moduleId}`).value;
+            const ownerReg = document.getElementById(`resOwnerReg-${moduleId}`).value;
+            const isOriginal = document.getElementById(`resOriginal-${moduleId}`).checked;
+            const isPinned = document.getElementById(`resPinned-${moduleId}`).checked;
+
+            await addDoc(collection(db, "courses", courseId, "content", moduleId, "resources"), {
+                title: title,
+                type: type,
+                link: link,
+                ownerReg: ownerReg,
+                isOriginal: isOriginal,
+                isPinned: isPinned,
+                uploadedBy: userSnap.data().registrationNumber || userName,
+                uploadedAt: new Date().toISOString()
+            });
+
+            e.target.reset();
+            loadResources(moduleId);
+        };
+
+        window.deleteModule = async (moduleId) => {
+            if (!currentPerms.isOwner && !currentPerms.canManageDelete) {
+                alert("Destructive action denied."); return;
+            }
+            if (confirm("Delete this module and all its resources? This cannot be undone.")) {
+                try {
+                    // Fetch all resources in this module first
+                    const resRef = collection(db, "courses", courseId, "content", moduleId, "resources");
+                    const resSnap = await getDocs(resRef);
+
+                    // Delete each resource document
+                    const deletePromises = resSnap.docs.map(resDoc => deleteDoc(resDoc.ref));
+                    await Promise.all(deletePromises);
+
+                    // Finally delete the module document
+                    await deleteDoc(doc(db, "courses", courseId, "content", moduleId));
+                    loadModules();
+                    alert("Module and all contained resources deleted successfully.");
+                } catch (err) {
+                    console.error("Error deleting module:", err);
+                    alert("Failed to partially or fully delete module: " + err.message);
+                }
+            }
+        };
+
+        window.deleteResource = async (moduleId, resId) => {
+            if (!currentPerms.isOwner && !currentPerms.canManageDelete) {
+                alert("Destructive action denied."); return;
+            }
+            if (confirm("Remove this resource?")) {
+                await deleteDoc(doc(db, "courses", courseId, "content", moduleId, "resources", resId));
+                loadResources(moduleId);
+            }
+        };
+
+        window.togglePin = async (moduleId, resId, currentStatus) => {
+            if (!currentPerms.isOwner && !currentPerms.canManageCourses) {
+                alert("Permission denied."); return;
+            }
+            await updateDoc(doc(db, "courses", courseId, "content", moduleId, "resources", resId), {
+                isPinned: !currentStatus
+            });
+            loadResources(moduleId);
+        };
+
+        let activeEditResModuleId = null;
+        let activeEditResId = null;
+
+        window.openEditResource = async (moduleId, resId) => {
+            console.log("Opening edit resource:", resId, "in module:", moduleId);
+            const r = allCurrentResources.find(x => x.id === resId);
+            if (!r) {
+                console.error("Resource not found in cache:", resId);
+                alert("Error: Resource data not found. Please refresh.");
+                return;
+            }
+
+            activeEditResModuleId = moduleId;
+            activeEditResId = resId;
+
+            const titleInput = document.getElementById("editResTitle");
+            const linkInput = document.getElementById("editResLink");
+            const courseSelect = document.getElementById("editResCourse");
+            const modSelect = document.getElementById("editResModule");
+
+            if (!titleInput || !linkInput || !courseSelect || !modSelect) {
+                console.error("Modal elements missing");
+                return;
+            }
+
+            titleInput.value = r.title || r.tittle || "";
+            linkInput.value = r.link || "";
+
+            courseSelect.innerHTML = '<option value="">Loading courses...</option>';
+            modSelect.innerHTML = '<option value="">Loading modules...</option>';
+
+            try {
+                const snap = await getDocs(collection(db, "courses"));
+                courseSelect.innerHTML = "";
+                snap.forEach(d => {
+                    let canAccess = true;
+                    if (!currentPerms.isOwner) {
+                        const courseYear = d.id[2];
+                        const yearMatch = (currentPerms.allowedYears || []).includes(courseYear);
+                        const courseMatch = (currentPerms.allowedCourses || []).includes(d.id);
+                        if (!yearMatch && !courseMatch) canAccess = false;
+                    }
+                    if (canAccess) {
+                        courseSelect.innerHTML += `<option value="${d.id}">${d.data().name || d.id}</option>`;
+                    }
+                });
+                courseSelect.value = courseId;
+
+                await window.loadEditResModules(courseId);
+                modSelect.value = moduleId;
+
+                document.getElementById("editResModal").classList.add("active");
+            } catch (err) {
+                console.error("Error populating edit modal:", err);
+                alert("Failed to load course/module options.");
+            }
+        };
+
+        window.loadEditResModules = async (selectedCourseId) => {
+            const moduleSelect = document.getElementById("editResModule");
+            moduleSelect.innerHTML = '<option value="">-- Choose Module --</option>';
+            if (!selectedCourseId) return;
+
+            const snap = await getDocs(collection(db, "courses", selectedCourseId, "content"));
+            const mods = [];
+            snap.forEach(d => mods.push({ id: d.id, ...d.data() }));
+            mods.sort((a, b) => {
+                const valA = a.title || a.tittle || "";
+                const valB = b.title || b.tittle || "";
+                return (parseInt(valA) || 0) - (parseInt(valB) || 0);
+            });
+            mods.forEach(m => {
+                moduleSelect.innerHTML += `<option value="${m.id}">${m.title || m.tittle}</option>`;
+            });
+        };
+
+        window.closeEditResModal = () => {
+            document.getElementById("editResModal").classList.remove("active");
+            activeEditResModuleId = null;
+            activeEditResId = null;
+        };
+
+        document.getElementById("saveResBtn").onclick = async () => {
+            if (!activeEditResId || !activeEditResModuleId) return;
+            if (!currentPerms.isOwner && !currentPerms.canManageCourses) {
+                alert("Permission denied."); return;
+            }
+
+            const newTitle = document.getElementById("editResTitle").value;
+            const newLink = document.getElementById("editResLink").value;
+            const newCourseId = document.getElementById("editResCourse").value;
+            const newModId = document.getElementById("editResModule").value;
+
+            const btn = document.getElementById("saveResBtn");
+            btn.disabled = true;
+            btn.textContent = "Saving...";
+
+            try {
+                if (newCourseId !== courseId || newModId !== activeEditResModuleId) {
+                    // Move to new course/module
+                    const oldRef = doc(db, "courses", courseId, "content", activeEditResModuleId, "resources", activeEditResId);
+                    const newRef = doc(db, "courses", newCourseId, "content", newModId, "resources", activeEditResId);
+
+                    const snap = await getDoc(oldRef);
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        data.title = newTitle;
+                        if (data.tittle) delete data.tittle; // Cleanup old typo if exists
+                        data.link = newLink;
+                        await setDoc(newRef, data);
+                        await deleteDoc(oldRef);
+                    }
+                } else {
+                    // Just update
+                    await updateDoc(doc(db, "courses", courseId, "content", activeEditResModuleId, "resources", activeEditResId), {
+                        title: newTitle,
+                        link: newLink
+                    });
+                }
+                closeEditResModal();
+                await loadModules();
+            } catch (err) {
+                alert("Failed to update: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Save Changes";
+            }
+        };
+
+        let activeEditModId = null;
+
+        window.openEditModule = (id) => {
+            console.log("Opening edit module:", id);
+            const m = allModules.find(x => x.id === id);
+            if (!m) {
+                console.error("Module not found in cache:", id);
+                return;
+            }
+            activeEditModId = id;
+            document.getElementById("editModTitle").value = m.title || m.tittle || "";
+            document.getElementById("editModDesc").value = m.description || "";
+            document.getElementById("editModModal").classList.add("active");
+        };
+
+        window.closeEditModModal = () => {
+            document.getElementById("editModModal").classList.remove("active");
+            activeEditModId = null;
+        };
+
+        document.getElementById("saveModBtn").onclick = async () => {
+            if (!activeEditModId) return;
+            if (!currentPerms.isOwner && !currentPerms.canManageCourses) {
+                alert("Permission denied."); return;
+            }
+
+            const newTitle = document.getElementById("editModTitle").value;
+            const newDesc = document.getElementById("editModDesc").value;
+
+            const btn = document.getElementById("saveModBtn");
+            btn.disabled = true;
+            btn.textContent = "Saving...";
+
+            try {
+                await updateDoc(doc(db, "courses", courseId, "content", activeEditModId), {
+                    title: newTitle, // Save as correct 'title'
+                    description: newDesc
+                });
+                closeEditModModal();
+                loadModules();
+            } catch (err) {
+                alert("Failed to update: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Save Changes";
+            }
+        };
+
+    </script>
+</body>
+
+</html>

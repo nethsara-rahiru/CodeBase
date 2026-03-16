@@ -31,7 +31,15 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+// Initialize Firestore with modern persistence settings
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+const db = initializeFirestore(app, {
+  cache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  })
+});
+
 const provider = new GoogleAuthProvider();
 
 const ALLOWED_DOMAINS = ["@std.uwu.ac.lk", "@stu.vau.ac.lk"];
@@ -101,6 +109,15 @@ window.googleLogin = async function () {
         return;
       }
 
+      // Check maintenance mode
+      const sysSnap = await getDoc(doc(db, "system", "settings"));
+      if (sysSnap.exists() && sysSnap.data().maintenance && (userDoc.data().role || "student") === "student") {
+        alert("Site is under maintenance. Only staff allowed.");
+        await signOut(auth);
+        localStorage.removeItem("user");
+        return;
+      }
+
       // Redirect based on role
       redirectByRole(userDoc.data().role || "student");
     } else {
@@ -138,6 +155,20 @@ window.registerUser = async function (regNumber, phone, level) {
   if (!bannedSnap.empty) {
     alert("This registration number is banned.");
     return;
+  }
+
+  // Check registration setting
+  const sysSnap = await getDoc(doc(db, "system", "settings"));
+  if (sysSnap.exists()) {
+    const sysData = sysSnap.data();
+    if (sysData.maintenance) {
+      alert("System is currently under maintenance.");
+      return;
+    }
+    if (sysData.registration === false) {
+      alert("Public registration is currently disabled.");
+      return;
+    }
   }
 
   const userRef = doc(db, "users", user.uid);
