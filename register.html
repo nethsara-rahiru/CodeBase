@@ -124,7 +124,8 @@
     }
 
     .input-group input,
-    #level {
+    #level,
+    #semester {
       width: 100%;
       padding: 14px 16px;
       font-size: 1rem;
@@ -134,10 +135,13 @@
       transition: all 0.3s ease;
       background: rgba(0, 0, 0, 0.2);
       color: white;
+      appearance: none;
+      -webkit-appearance: none;
     }
 
     .input-group input:focus,
-    #level:focus {
+    #level:focus,
+    #semester:focus {
       border-color: var(--accent-primary);
       background: rgba(0, 0, 0, 0.3);
       box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
@@ -258,18 +262,27 @@
       <label for="regno" class="label">Registration Number</label>
     </div>
 
-    <!-- Year -->
-    <div class="input-group">
-      <label class="sLabel">Academic Year</label>
-      <select id="level" required>
-        <option value="1">1st Year</option>
-        <option value="2">2nd Year</option>
-        <option value="3">3rd Year</option>
-        <option value="4">4th Year</option>
-      </select>
+    <!-- Academic Info (Year + Semester) -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+      <div class="input-group" style="margin-bottom: 0;">
+        <label class="sLabel">Academic Year</label>
+        <select id="level" required>
+          <option value="1">1st Year</option>
+          <option value="2">2nd Year</option>
+          <option value="3">3rd Year</option>
+          <option value="4">4th Year</option>
+        </select>
+      </div>
+      <div class="input-group" style="margin-bottom: 0;">
+        <label class="sLabel">Semester</label>
+        <select id="semester" required>
+          <option value="1">Semester 1</option>
+          <option value="2">Semester 2</option>
+        </select>
+      </div>
     </div>
 
-    <div class="input-group">
+    <div class="input-group" style="animation-delay: 0.4s;">
       <input type="text" id="phone" placeholder=" ">
       <label for="phone" class="label">Phone Number</label>
     </div>
@@ -281,24 +294,58 @@
     </button>
   </div>
 
-  <script type="module" src="assets/js/firebase.js"></script>
-  <script>
-    const user = JSON.parse(localStorage.getItem('user'));
+  <script type="module">
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+    import { app } from "./assets/js/firebase.js";
 
-    if (!user) {
-      window.location.href = "index.html";
-    }
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    // Set email + name
-    document.getElementById("emailCard").textContent = user.email;
-    document.getElementById("name").value = user.name;
+    const submitBtn = document.getElementById("submitBtn");
+    const btnText = document.getElementById("btnText");
+    const btnSpinner = document.getElementById("btnSpinner");
+    const phoneInput = document.getElementById("phone");
+    const phoneVal = document.getElementById("phoneVal");
+    const regnoInput = document.getElementById("regno");
 
-    // Extract registration number from email BEFORE the '@'
-    const emailPrefix = user.email.split("@")[0];
+    let currentStream = "";
 
-    // Convert to formatted REG NO → 2022/ICT/62
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      // CHECK IF ALREADY REGISTERED
+      const userSnap = await getDoc(doc(db, "users", user.uid));
+      if (userSnap.exists()) {
+        alert("You are already registered! Redirecting to your dashboard...");
+        window.location.href = "dashboard.html";
+        return;
+      }
+
+      // Initial Setup
+      document.getElementById("emailCard").textContent = user.email;
+      document.getElementById("name").value = user.displayName || "";
+
+      // Autofill RegNo
+      const emailPrefix = user.email.split("@")[0];
+      const allowedUserDetails = JSON.parse(localStorage.getItem("allowedUserDetails"));
+      
+      let autoReg;
+      if (allowedUserDetails && allowedUserDetails.regNo) {
+        autoReg = allowedUserDetails.regNo;
+      } else {
+        autoReg = formatRegNo(emailPrefix);
+      }
+      regnoInput.value = autoReg;
+    });
+
     function formatRegNo(raw) {
       raw = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (raw.length < 4) return raw;
+
       const year = raw.substring(0, 4);
       let dept = "";
       let num = "";
@@ -312,6 +359,7 @@
       }
 
       if (dept === "") dept = raw.substring(4);
+      currentStream = dept; 
 
       let result = year;
       if (dept) result += "/" + dept;
@@ -320,26 +368,9 @@
       return result;
     }
 
-    const allowedUserDetails = JSON.parse(localStorage.getItem("allowedUserDetails"));
-    let autoReg;
-
-    if (allowedUserDetails && allowedUserDetails.regNo) {
-      autoReg = allowedUserDetails.regNo;
-    } else {
-      autoReg = formatRegNo(emailPrefix);
-    }
-
-    document.getElementById("regno").value = autoReg;
-
-    document.getElementById("regno").addEventListener("input", function () {
+    regnoInput.addEventListener("input", function () {
       this.value = formatRegNo(this.value);
     });
-
-    const phoneInput = document.getElementById("phone");
-    const phoneVal = document.getElementById("phoneVal");
-    const submitBtn = document.getElementById("submitBtn");
-    const btnText = document.getElementById("btnText");
-    const btnSpinner = document.getElementById("btnSpinner");
 
     function validatePhone(phone) {
       return /^07[0-9]{8}$/.test(phone);
@@ -360,10 +391,11 @@
       }
     });
 
-    function submitRegistration() {
-      const reg = document.getElementById("regno").value.trim();
-      const phone = document.getElementById("phone").value.trim();
+    window.submitRegistration = function() {
+      const reg = regnoInput.value.trim();
+      const phone = phoneInput.value.trim();
       const level = document.getElementById("level").value.trim();
+      const semester = document.getElementById("semester").value.trim();
 
       if (!validatePhone(phone)) {
         phoneVal.textContent = "Please enter a valid phone number";
@@ -376,8 +408,10 @@
       btnSpinner.style.display = "block";
       submitBtn.disabled = true;
 
-      registerUser(reg, phone, level);
-    }
+      formatRegNo(reg.replace(/\//g, "")); 
+
+      window.registerUser(reg, phone, level, semester, currentStream);
+    };
   </script>
 </body>
 

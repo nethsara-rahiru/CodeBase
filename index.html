@@ -226,11 +226,18 @@
         const loading = document.getElementById("loading");
 
         // FAST REDIRECT IF SESSION EXISTS
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 loading.style.display = "block";
-                loading.textContent = "Welcome back! Redirecting...";
-                window.location.href = "dashboard.html";
+                loading.textContent = "Verifying account... Please wait";
+                try {
+                    await window.handleUserAuth(user);
+                } catch (error) {
+                    console.error("Auth check failed:", error);
+                    loading.style.display = "none";
+                    btn.disabled = false;
+                    btn.style.opacity = "1";
+                }
             }
         });
 
