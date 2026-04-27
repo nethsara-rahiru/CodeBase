@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EduHub Dashboard | CodeBase</title>
+
+    <!-- Google Fonts: Inter & Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons (CDN for convenience) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        :root {
+            --bg-dark: #020617;
+            --bg-card: rgba(15, 23, 42, 0.6);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #6366f1;
+            --accent-secondary: #a855f7;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --sidebar-width: 320px;
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+            background: var(--bg-dark);
+            background-image:
+                radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 45%),
+                radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.08) 0%, transparent 45%);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* --- Sidebar Styling --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--bg-card);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .sidebar-header {
+            padding: 40px 24px 32px;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.02), transparent);
+        }
+
+        .back-dashboard-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: var(--transition-smooth);
+            margin-bottom: 8px;
+        }
+
+        .back-dashboard-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent-primary);
+            transform: translateX(-4px);
+            box-shadow: 0 4px 20px -8px var(--accent-glow);
+        }
+
+        .back-dashboard-btn i {
+            width: 18px;
+            height: 18px;
+            color: var(--accent-primary);
+        }
+
+        .switcher-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .custom-select-wrap {
+            position: relative;
+        }
+
+        .semester-switcher {
+            width: 100%;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            padding: 12px 16px;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+            transition: var(--transition-smooth);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 16px;
+        }
+
+        .semester-switcher:hover {
+            background-color: rgba(255, 255, 255, 0.07);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .semester-switcher:focus {
+            border-color: var(--accent-primary);
+            background-color: rgba(99, 102, 241, 0.08);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 16px 40px;
+        }
+
+        .sidebar-menu::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar-menu::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        /* --- Accordion Menu --- */
+        .accordion-item {
+            margin-bottom: 8px;
+            border-radius: 16px;
+            overflow: hidden;
+            transition: var(--transition-smooth);
+            border: 1px solid transparent;
+        }
+
+        .accordion-item.active {
+            background: rgba(255, 255, 255, 0.02);
+            border-color: var(--glass-border);
+        }
+
+        .accordion-header {
+            width: 100%;
+            padding: 16px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            text-align: left;
+        }
+
+        .accordion-header:hover {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-main);
+        }
+
+        .accordion-item.active .accordion-header {
+            color: var(--accent-primary);
+        }
+
+        .subject-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .module-icon {
+            width: 20px;
+            height: 20px;
+            color: var(--text-muted);
+            transition: var(--transition-smooth);
+            flex-shrink: 0;
+        }
+
+        .accordion-item.active .module-icon {
+            color: var(--accent-primary);
+            filter: drop-shadow(0 0 8px var(--accent-glow));
+        }
+
+        .chevron {
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: 16px;
+            opacity: 0.5;
+            flex-shrink: 0;
+        }
+
+        .accordion-item.active .chevron {
+            transform: rotate(180deg);
+            opacity: 1;
+            color: var(--accent-primary);
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 0 16px 0 52px;
+            position: relative;
+        }
+
+        .accordion-content::before {
+            content: '';
+            position: absolute;
+            left: 25px;
+            top: 0;
+            bottom: 20px;
+            width: 1px;
+            background: linear-gradient(to bottom, var(--accent-primary), transparent);
+            opacity: 0.3;
+        }
+
+        .accordion-item.active .accordion-content {
+            max-height: 1000px;
+            padding-bottom: 20px;
+        }
+
+        .resource-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            margin: 4px 0;
+            border-radius: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: var(--transition-smooth);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .resource-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            padding-left: 20px;
+        }
+
+        .resource-link::before {
+            content: '';
+            position: absolute;
+            left: -27px;
+            top: 50%;
+            width: 6px;
+            height: 6px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            transform: translateY(-50%);
+            opacity: 0.3;
+            transition: var(--transition-smooth);
+        }
+
+        .resource-link:hover::before {
+            background: var(--accent-primary);
+            opacity: 1;
+            box-shadow: 0 0 8px var(--accent-primary);
+        }
+
+        .resource-link i {
+            width: 16px;
+            height: 16px;
+            opacity: 0.7;
+        }
+
+        /* --- Main Content Styling --- */
+        .main-viewport {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            background: #000;
+        }
+
+        .viewport-header {
+            height: 80px;
+            padding: 0 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(2, 6, 23, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 900;
+        }
+
+        .current-path {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .path-sep {
+            opacity: 0.3;
+        }
+
+        .active-resource-title {
+            color: var(--text-main);
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .action-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .viewer-container {
+            flex: 1;
+            padding: 0;
+            background: #020617;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .iframe-wrapper {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg-dark);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #content-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            display: none;
+        }
+
+        #content-frame.loaded {
+            opacity: 1;
+        }
+
+        /* --- Empty State --- */
+        .empty-state {
+            text-align: center;
+            max-width: 500px;
+            padding: 40px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .empty-state-icon {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 32px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+
+        .empty-state-icon i {
+            width: 48px;
+            height: 48px;
+            color: var(--accent-primary);
+            filter: drop-shadow(0 0 12px var(--accent-glow));
+        }
+
+        .empty-state h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .empty-state p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: var(--text-muted);
+        }
+
+        /* --- Progress Bar --- */
+        .progress-bar-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.05);
+            z-index: 2000;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
+            box-shadow: 0 0 12px var(--accent-primary);
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .progress-bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100%;
+            background: linear-gradient(to right, transparent, white, transparent);
+            opacity: 0.2;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        @keyframes progress-loading {
+            0% { width: 0%; }
+            20% { width: 30%; }
+            50% { width: 60%; }
+            80% { width: 85%; }
+            100% { width: 90%; }
+        }
+
+        .progress-active .progress-bar-fill {
+            animation: progress-loading 10s cubic-bezier(0.12, 0, 0.39, 0) forwards;
+        }
+
+        .progress-complete .progress-bar-fill {
+            width: 100% !important;
+            animation: none !important;
+            transition: width 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        /* --- Pulse Animation --- */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(99, 102, 241, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
+
+        /* --- Mobile UI --- */
+        .menu-btn {
+            display: none;
+            width: 46px;
+            height: 46px;
+            background: var(--accent-primary);
+            border: none;
+            color: white;
+            border-radius: 14px;
+            cursor: pointer;
+            z-index: 1100;
+            box-shadow: 0 8px 16px var(--accent-glow);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 950;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .menu-btn {
+                display: flex;
+                position: fixed;
+                bottom: 30px;
+                right: 30px;
+            }
+
+            .viewport-header {
+                padding: 0 20px;
+                height: 70px;
+            }
+
+            .current-path span:not(.active-resource-title) {
+                display: none;
+            }
+
+            .current-path .path-sep {
+                display: none;
+            }
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <div class="overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="dashboard.html" class="back-dashboard-btn">
+                <i data-lucide="arrow-left"></i>
+                <span>Back to Dashboard</span>
+            </a>
+
+            <div class="switcher-grid" style="margin-top: 24px; display: none;">
+                <div class="custom-select-wrap">
+                    <select class="semester-switcher" id="yearSwitcher">
+                        <option value="1">Year 1</option>
+                        <option value="2">Year 2</option>
+                        <option value="3">Year 3</option>
+                        <option value="4" selected>Year 4</option>
+                    </select>
+                </div>
+                <div class="custom-select-wrap">
+                    <select class="semester-switcher" id="semesterSwitcher">
+                        <option value="1">Sem 1</option>
+                        <option value="2">Sem 2</option>
+                    </select>
+                </div>
+            </div>
+            <div class="custom-select-wrap">
+                <select class="semester-switcher" id="subjectSwitcher" style="width: 100%; border-radius: 12px; margin-top: 4px;">
+                    <option value="">Select a subject...</option>
+                </select>
+            </div>
+        </div>
+
+        <nav class="sidebar-menu" id="accordionMenu">
+            <!-- Subjects will be injected here -->
+        </nav>
+    </aside>
+
+    <main class="main-viewport">
+        <div class="progress-bar-container" id="progressBar">
+            <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+        <header class="viewport-header">
+            <div class="current-path">
+                <span id="header-subject">EduHub</span>
+                <span class="path-sep">/</span>
+                <span id="header-module" class="active-resource-title">Dashboard</span>
+            </div>
+            <div class="header-actions">
+                <button class="action-btn" id="toggleFullscreen" title="Fullscreen">
+                    <i data-lucide="maximize"></i>
+                </button>
+                <button class="action-btn" id="refreshContent" title="Refresh">
+                    <i data-lucide="rotate-cw"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Mobile Menu Button -->
+        <button class="menu-btn" id="menuToggle">
+            <i data-lucide="menu"></i>
+        </button>
+
+        <section class="viewer-container">
+            <div class="iframe-wrapper" id="frameWrapper">
+                <div id="placeholder" class="empty-state">
+                    <div class="empty-state-icon">
+                        <i data-lucide="layout-dashboard"></i>
+                    </div>
+                    <h2>Welcome to EduHub</h2>
+                    <p>Unlock your academic potential. Select a subject from the sidebar and dive into your learning resources.</p>
+                </div>
+                <iframe id="content-frame"></iframe>
+            </div>
+        </section>
+    </main>
+
+    <script type="module">
+        import { auth, db } from "./assets/js/firebase.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+        import { collection, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+        // DOM Elements
+        const accordionMenu = document.getElementById('accordionMenu');
+        const yearSwitcher = document.getElementById('yearSwitcher');
+        const semesterSwitcher = document.getElementById('semesterSwitcher');
+        const subjectSwitcher = document.getElementById('subjectSwitcher');
+        const headerSubject = document.getElementById('header-subject');
+        const headerModule = document.getElementById('header-module');
+        const contentFrame = document.getElementById('content-frame');
+        const placeholder = document.getElementById('placeholder');
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        const toggleFullscreen = document.getElementById('toggleFullscreen');
+        const refreshContent = document.getElementById('refreshContent');
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        let currentUser = null;
+
+        // Auth State Listener
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                
+                // Fetch user data for current year/semester
+                const userSnap = await getDoc(doc(db, "users", user.uid));
+                if (userSnap.exists()) {
+                    const userData = userSnap.data();
+                    if (userData.level) yearSwitcher.value = userData.level;
+                    if (userData.semester) semesterSwitcher.value = userData.semester;
+                }
+                
+                loadCourses(yearSwitcher.value, semesterSwitcher.value);
+            } else {
+                // Not logged in -> Redirect to login.html (CodeBase default)
+                window.location.href = "login.html";
+            }
+        });
+
+        // Load Courses for Selected Year & Semester into Dropdown
+        async function loadCourses(year, semester) {
+            subjectSwitcher.innerHTML = '<option value="">Loading subjects...</option>';
+            accordionMenu.innerHTML = '';
+            
+            try {
+                const coursesRef = collection(db, "courses");
+                const querySnapshot = await getDocs(coursesRef);
+                
+                subjectSwitcher.innerHTML = '';
+                let firstCourseId = null;
+
+                querySnapshot.forEach((doc) => {
+                    const courseId = doc.id;
+                    const courseData = doc.data();
+                    
+                    if (courseId[2] == year && courseId[3] == semester) {
+                        const opt = document.createElement('option');
+                        opt.value = courseId;
+                        const title = courseData.name || courseData.title || courseData.courseName;
+                        opt.textContent = title ? `${courseId} - ${title}` : courseId;
+                        subjectSwitcher.appendChild(opt);
+                        if (!firstCourseId) firstCourseId = courseId;
+                    }
+                });
+
+                if (!firstCourseId) {
+                    subjectSwitcher.innerHTML = '<option value="">No subjects found</option>';
+                    accordionMenu.innerHTML = '<div style="padding: 20px; color: var(--text-muted);">No subjects found for this selection.</div>';
+                } else {
+                    loadModules(firstCourseId); // Auto-load first course
+                }
+                
+            } catch (error) {
+                console.error("Error loading courses:", error);
+                subjectSwitcher.innerHTML = '<option value="">Error loading subjects</option>';
+            }
+        }
+
+        // Load Modules (Tree) for a Selected Subject
+        async function loadModules(courseId) {
+            accordionMenu.innerHTML = '<div style="padding: 20px; color: var(--text-muted);">Loading course contents...</div>';
+            
+            try {
+                const contentRef = collection(db, "courses", courseId, "content");
+                const moduleSnap = await getDocs(contentRef);
+                
+                accordionMenu.innerHTML = '';
+                
+                if (moduleSnap.empty) {
+                    accordionMenu.innerHTML = '<div style="padding: 20px; color: var(--text-muted);">No contents available for this subject.</div>';
+                    return;
+                }
+
+                // Sort modules if title holds numbers (like Module 1), purely optional but good
+                const modules = moduleSnap.docs.map(m => ({ id: m.id, ...m.data() }));
+                
+                modules.forEach(modData => {
+                    renderModuleItem(courseId, modData);
+                });
+                
+            } catch (error) {
+                console.error("Error loading modules:", error);
+                accordionMenu.innerHTML = '<div style="padding: 20px; color: #ef4444;">Error loading contents.</div>';
+            }
+        }
+
+        function renderModuleItem(courseId, modData) {
+            const item = document.createElement('div');
+            item.className = 'accordion-item';
+            
+            const header = document.createElement('button');
+            header.className = 'accordion-header';
+            const moduleTitle = modData.tittle || modData.title || modData.name || modData.id;
+            header.innerHTML = `
+                <div class="subject-info">
+                    <i data-lucide="folder" class="module-icon"></i>
+                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px;">${moduleTitle}</span>
+                </div>
+                <i data-lucide="chevron-down" class="chevron"></i>
+            `;
+            
+            const content = document.createElement('div');
+            content.className = 'accordion-content';
+            
+            header.addEventListener('click', async () => {
+                const isActive = item.classList.contains('active');
+                
+                // Close others
+                document.querySelectorAll('.accordion-item').forEach(i => i.classList.remove('active'));
+                
+                if (!isActive) {
+                    item.classList.add('active');
+                    if (content.innerHTML === '') {
+                        content.innerHTML = '<div style="padding: 10px 0; font-size: 0.85rem; color: var(--text-muted); opacity: 0.6; display: flex; align-items: center; gap: 8px;"><i data-lucide="loader-2" class="animate-spin" style="width: 14px;"></i>Fetching resources...</div>';
+                        lucide.createIcons();
+                        await loadModuleResources(courseId, modData.id, content, moduleTitle);
+                    }
+                }
+            });
+
+            item.appendChild(header);
+            item.appendChild(content);
+            accordionMenu.appendChild(item);
+            lucide.createIcons();
+        }
+
+        // Load and Categorize Resources for a Specific Module
+        async function loadModuleResources(courseId, moduleId, container, moduleName) {
+            try {
+                const resources = { video: [], docs: [], code: [], blog: [] };
+
+                // Fetch official module resources
+                const resRef = collection(db, "courses", courseId, "content", moduleId, "resources");
+                const resSnap = await getDocs(resRef);
+                resSnap.forEach(r => categorizeResource({ ...r.data(), id: r.id }, resources));
+
+                // Fetch Community Resources
+                const commRef = collection(db, "community_resources");
+                const commSnap = await getDocs(query(commRef, where("courseId", "==", courseId), where("moduleId", "==", moduleId)));
+                commSnap.forEach(r => {
+                    const data = r.data();
+                    if (!data.isHidden) categorizeResource({ ...data, id: r.id }, resources);
+                });
+
+                renderCategorizedUI(container, resources, moduleName);
+
+            } catch (error) {
+                console.error("Error loading resources:", error);
+                container.innerHTML = '<div style="padding: 10px 0; color: #ef4444;">Failed to load resources.</div>';
+            }
+        }
+
+        function categorizeResource(data, groups) {
+            const type = (data.type || 'link').toLowerCase();
+            const resource = {
+                id: data.id,
+                title: data.title || data.tittle || 'Untitled',
+                src: data.link || '',
+                type: type
+            };
+
+            if (type === 'video') groups.video.push(resource);
+            else if (type === 'pdf' || type === 'docs') groups.docs.push(resource);
+            else if (type === 'blog') groups.blog.push(resource);
+            else if (type === 'github' || type === 'code') groups.code.push(resource);
+            else {
+                if (resource.src.includes('drive.google.com')) groups.docs.push(resource);
+                else groups.code.push(resource); 
+            }
+        }
+
+        function renderCategorizedUI(container, groups, moduleName) {
+            container.innerHTML = '';
+            
+            const categories = [
+                { id: 'video', label: 'Videos', icon: 'play-circle' },
+                { id: 'docs', label: 'Documents', icon: 'file-text' },
+                { id: 'blog', label: 'Blogs', icon: 'book-open' },
+                { id: 'code', label: 'Code & Links', icon: 'code' }
+            ];
+
+            categories.forEach(cat => {
+                if (groups[cat.id].length > 0) {
+                    const catLabel = document.createElement('div');
+                    catLabel.style = "font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-secondary); margin: 12px 0 4px; font-weight: 700; opacity: 0.8;";
+                    catLabel.innerText = cat.label;
+                    container.appendChild(catLabel);
+
+                    groups[cat.id].forEach(res => {
+                        const link = document.createElement('a');
+                        link.className = 'resource-link';
+                        link.innerHTML = `<i data-lucide="${cat.icon}"></i><span>${res.title}</span>`;
+                        link.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            updateIframe(res.src, `${moduleName} - ${res.title}`, res.type, res.id);
+                            if (window.innerWidth <= 1024) toggleSidebar();
+                        });
+                        container.appendChild(link);
+                    });
+                }
+            });
+
+            if (container.innerHTML === '') {
+                container.innerHTML = '<div style="padding: 10px 0; font-size: 0.8rem; color: var(--text-muted);">No resources available.</div>';
+            }
+            
+            lucide.createIcons();
+        }
+
+        // Update Iframe Function
+        function updateIframe(src, title, type, resId) {
+            // Links and Code repositories generally block iframes, so we open them directly
+            if (type === 'github' || type === 'link' || type === 'code' || type === 'external') {
+                window.open(src, "_blank");
+                return;
+            }
+
+            placeholder.style.display = 'none';
+            contentFrame.classList.remove('loaded');
+            contentFrame.style.display = 'block';
+            
+            startProgressBar();
+
+            // Update Headers
+            const subjectTitle = subjectSwitcher.options[subjectSwitcher.selectedIndex]?.text || "EduHub";
+            headerSubject.textContent = subjectTitle.split(' - ')[1] || subjectTitle;
+            headerModule.textContent = title;
+
+            let finalSrc = src;
+
+            if (type === 'blog') {
+                finalSrc = `blog.html?id=${resId}&mode=eduhub`;
+            }
+            // Handle YouTube
+            else if (type === 'video' || src.includes('youtube.com') || src.includes('youtu.be')) {
+                const ytMatch = src.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|watch\?v=))([\w-]+)/);
+                if (ytMatch) {
+                    finalSrc = `https://www.youtube.com/embed/${ytMatch[1]}`;
+                }
+            }
+            // Handle Google Drive PDFs seamlessly using CodeBase's PDF.js native reader
+            else if (type === 'pdf' || type === 'docs' || src.includes('drive.google.com')) {
+                const fileIdMatch = src.match(/\/file\/d\/([a-zA-Z0-9_-]+)\/|[?&]id=([a-zA-Z0-9_-]+)/);
+                const fileId = fileIdMatch ? (fileIdMatch[1] || fileIdMatch[2]) : null;
+                if (fileId) {
+                    finalSrc = `reader.html?id=${fileId}&mode=eduhub`;
+                }
+            }
+
+            contentFrame.src = finalSrc;
+            contentFrame.onload = () => {
+                contentFrame.classList.add('loaded');
+                completeProgressBar();
+            };
+        }
+
+        function startProgressBar() {
+            const bar = document.getElementById('progressBar');
+            const fill = document.getElementById('progressFill');
+            bar.style.display = 'block';
+            bar.classList.add('progress-active');
+            bar.classList.remove('progress-complete');
+            fill.style.width = '0%';
+        }
+
+        function completeProgressBar() {
+            const bar = document.getElementById('progressBar');
+            if (!bar.classList.contains('progress-active')) return;
+            
+            bar.classList.remove('progress-active');
+            bar.classList.add('progress-complete');
+            
+            setTimeout(() => {
+                bar.style.opacity = '0';
+                bar.style.transition = 'opacity 0.4s ease';
+                setTimeout(() => {
+                    bar.style.display = 'none';
+                    bar.style.opacity = '1';
+                    bar.classList.remove('progress-complete');
+                }, 400);
+            }, 600);
+        }
+
+        // Sidebar Toggle
+        function toggleSidebar() {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+            overlay.style.display = sidebar.classList.contains('open') ? 'block' : 'none';
+        }
+
+        // Listeners
+        yearSwitcher.addEventListener('change', () => {
+            loadCourses(yearSwitcher.value, semesterSwitcher.value);
+        });
+        semesterSwitcher.addEventListener('change', () => {
+            loadCourses(yearSwitcher.value, semesterSwitcher.value);
+        });
+        subjectSwitcher.addEventListener('change', () => {
+            if (subjectSwitcher.value) loadModules(subjectSwitcher.value);
+        });
+
+        menuToggle.addEventListener('click', toggleSidebar);
+        overlay.addEventListener('click', toggleSidebar);
+
+        toggleFullscreen.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.getElementById('frameWrapper').requestFullscreen().catch(err => {
+                    console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        refreshContent.addEventListener('click', () => {
+            if (contentFrame.src) {
+                const currentSrc = contentFrame.src;
+                contentFrame.src = '';
+                contentFrame.src = currentSrc;
+            }
+        });
+
+    </script>
+
+</body>
+
+</html>

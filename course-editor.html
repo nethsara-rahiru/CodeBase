@@ -279,7 +279,7 @@
     <div class="container">
         <header>
             <div>
-                <a href="admin.html" class="back-btn">← Back to Dashboard</a>
+                <a href="admin.html?tab=courses" class="back-btn">← Back to Courses</a>
                 <h1 id="courseTitle">Loading Course...</h1>
                 <p id="courseIdDisplay" style="color: var(--text-muted); margin-top: 8px;"></p>
             </div>
@@ -364,12 +364,12 @@
         const urlParams = new URLSearchParams(window.location.search);
         const courseId = urlParams.get("id");
 
-        if (!courseId) window.location.href = "admin.html";
+        if (!courseId) window.location.href = "admin.html?tab=courses";
 
         let currentPerms = {};
 
         onAuthStateChanged(auth, async (user) => {
-            if (!user) { window.location.href = "index.html"; return; }
+            if (!user) { window.location.href = "login.html"; return; }
             const snap = await getDoc(doc(db, "users", user.uid));
             if (!snap.exists() || !["owner", "admin", "editor"].includes(snap.data().role)) {
                 window.location.href = "access-denied.html"; return;

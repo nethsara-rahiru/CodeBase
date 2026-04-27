@@ -4,6 +4,8 @@ import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import {
@@ -14,7 +16,9 @@ import {
   collection,
   getDocs,
   query,
-  where
+  where,
+  serverTimestamp,
+  addDoc
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 // Firebase config
@@ -50,13 +54,32 @@ const ALLOWED_DOMAINS = ["@std.uwu.ac.lk", "@stu.vau.ac.lk"];
 
 let isAuthProcessing = false;
 
+// Pick up result from redirect if any
+getRedirectResult(auth)
+  .then((result) => {
+    if (result) {
+      window.handleUserAuth(result.user);
+    }
+  })
+  .catch((error) => {
+    console.error("Redirect login failed:", error);
+  });
+
 window.googleLogin = async function () {
   try {
-    const result = await signInWithPopup(auth, provider);
-    await window.handleUserAuth(result.user);
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      // Use redirect mode for mobile to ensure compatibility with WebViews
+      await signInWithRedirect(auth, provider);
+    } else {
+      // Stick to popup for desktop
+      const result = await signInWithPopup(auth, provider);
+      await window.handleUserAuth(result.user);
+    }
   } catch (err) {
     console.error("Login failed:", err);
-    throw err; 
+    throw err;
   }
 };
 
@@ -110,8 +133,9 @@ window.handleUserAuth = async function (user) {
       alert("Access denied. Only approved university emails or whitelisted accounts allowed.");
       await signOut(auth);
       localStorage.clear();
-      if (!window.location.pathname.includes("index.html") && !window.location.pathname.includes("login.html")) {
-          window.location.href = "index.html"; 
+      const path = window.location.pathname.toLowerCase();
+      if (!path.includes("login.html") && path !== "/" && !path.endsWith("/") && path.includes(".html")) {
+          window.location.href = "login.html"; 
       }
       isAuthProcessing = false;
       return;
@@ -128,7 +152,7 @@ window.handleUserAuth = async function (user) {
         alert("Your account is banned.");
         await signOut(auth);
         localStorage.clear();
-        window.location.href = "index.html";
+        window.location.href = "login.html";
         isAuthProcessing = false;
         return;
       }
@@ -138,16 +162,33 @@ window.handleUserAuth = async function (user) {
         alert("Site is under maintenance. Only staff allowed.");
         await signOut(auth);
         localStorage.clear();
-        window.location.href = "index.html";
+        window.location.href = "login.html";
         isAuthProcessing = false;
         return;
       }
 
-      // Final redirect if we are on a login/landing page
-      const isOnAuthPage = window.location.pathname.includes("index.html") || 
-                           window.location.pathname.includes("login.html") || 
-                           window.location.pathname === "/" || 
-                           window.location.pathname.endsWith("/");
+      // ---------------------------------------------------------
+      // Log System Activity (Traffic Tracking)
+      // ---------------------------------------------------------
+      try {
+        await addDoc(collection(db, "activity"), {
+          uid: user.uid,
+          regNo: userDocData.registrationNumber || "N/A",
+          timestamp: serverTimestamp(),
+          type: "login"
+        });
+      } catch (logErr) {
+        console.warn("Failed to log activity:", logErr);
+      }
+      // ---------------------------------------------------------
+
+      // Final redirect if we are on an auth or landing page
+      const path = window.location.pathname.toLowerCase();
+      const isOnAuthPage = path.includes("login.html") || 
+                           path.includes("login-access.html") || 
+                           path === "/" || 
+                           path.endsWith("/") ||
+                           !path.includes(".html"); 
       
       if (isOnAuthPage) {
           redirectByRole(userDocData.role || "student");
@@ -228,4 +269,7 @@ window.registerUser = async function (regNumber, phone, level, semester, stream)
   window.location.href = "dashboard.html";
 };
 
-export { app, auth, db };
+import { getStorage } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-storage.js";
+const storage = getStorage(app);
+
+export { app, auth, db, storage };

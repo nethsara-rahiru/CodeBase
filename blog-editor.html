@@ -1,0 +1,2188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blog Editor | CodeBase</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    
+    <!-- Code Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #6366f1;
+            --accent-secondary: #ec4899;
+            --accent-warning: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 16px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand-area {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-main);
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(-2px);
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .main-container {
+            flex: 1;
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .editor-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .title-input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 16px;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .title-input:focus {
+            border-color: var(--accent-primary);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            padding: 12px;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            margin-bottom: 24px;
+            position: sticky;
+            top: 88px;
+            z-index: 50;
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            scrollbar-width: none;
+        }
+
+        .toolbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tool-btn {
+            flex: 0 0 auto;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tool-btn:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--glass-border);
+        }
+
+        .tool-btn.active {
+            color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+            border-color: rgba(99, 102, 241, 0.2);
+        }
+
+        .lang-selector {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .lang-btn {
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .lang-btn.active {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+
+        .size-selector {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-main);
+            padding: 0 8px;
+            height: 40px;
+            font-family: inherit;
+            font-size: 0.875rem;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            appearance: none;
+            -webkit-appearance: none;
+            min-width: 100px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+        }
+
+        .size-selector:hover {
+            background-color: rgba(255, 255, 255, 0.08);
+            border-color: var(--glass-border);
+        }
+
+        .size-selector:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .size-selector option {
+            background: var(--bg-dark);
+            color: white;
+        }
+
+        .content-area {
+            min-height: 400px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 24px;
+            color: white;
+            line-height: 1.6;
+            font-size: 1.1rem;
+            outline: none;
+            cursor: text;
+        }
+
+        .content-area:focus {
+            border-color: var(--glass-border);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .content-area [data-placeholder]:empty:before {
+            content: attr(data-placeholder);
+            color: var(--text-muted);
+            cursor: text;
+        }
+
+        .content-area img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            margin: 16px 0;
+            display: block;
+        }
+
+        /* --- Image Figure Wrapper --- */
+        .editor-img-wrap {
+            display: block;
+            position: relative;
+            cursor: default;
+            margin: 16px 0;
+            user-select: none;
+        }
+        .editor-img-wrap img {
+            display: block;
+            max-width: 100%;
+            border-radius: 12px;
+            pointer-events: none;
+        }
+        .editor-img-wrap.drag-over {
+            opacity: 0.4;
+        }
+        /* Action bar for images */
+        .editor-img-wrap .img-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 6px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+            pointer-events: all;
+        }
+        .editor-img-wrap:hover .img-actions {
+            opacity: 1;
+        }
+        .img-action-btn {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 5px 10px;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            backdrop-filter: blur(4px);
+        }
+        .img-action-btn:hover {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            transform: translateY(-1px);
+        }
+        .img-action-btn.edit-btn::after {
+            content: ' Edit';
+        }
+        .img-action-btn.delete-btn::after {
+            content: ' Delete';
+        }
+        .img-action-btn.delete-btn:hover {
+            background: var(--danger);
+            border-color: var(--danger);
+        }
+
+        /* Drag handle bar remains top-center but simplified */
+        .editor-img-wrap .img-drag-handle {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 4px 12px;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            cursor: grab;
+            opacity: 0;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            pointer-events: all;
+            backdrop-filter: blur(4px);
+        }
+        .editor-img-wrap .img-drag-handle::after {
+            content: 'DRAG';
+        }
+        .editor-img-wrap:hover .img-drag-handle {
+            opacity: 1;
+        }
+        .editor-img-wrap .img-drag-handle:active {
+            cursor: grabbing;
+        }
+        /* Resize handle at bottom-right */
+        .editor-img-wrap .img-resize-handle {
+            position: absolute;
+            bottom: 6px;
+            right: 6px;
+            width: 20px;
+            height: 20px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--glass-border);
+            border-radius: 4px;
+            cursor: se-resize;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+            pointer-events: all;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .editor-img-wrap .img-resize-handle::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-right: 2px solid white;
+            border-bottom: 2px solid white;
+        }
+        .editor-img-wrap:hover .img-resize-handle {
+            opacity: 1;
+        }
+        /* Drop caret indicator line */
+        .drop-caret {
+            display: inline-block;
+            width: 3px;
+            height: 1.2em;
+            background: var(--accent-primary);
+            border-radius: 2px;
+            margin: 0 1px;
+            vertical-align: middle;
+            pointer-events: none;
+            animation: caretPulse 0.8s ease infinite;
+        }
+        @keyframes caretPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* --- Code Box Component --- */
+        .code-box-wrap {
+            display: block;
+            position: relative;
+            margin: 32px 0;
+            background: linear-gradient(145deg, #1e1e2e 0%, #161621 100%); /* Tokyo Night deeper gradient */
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            overflow: hidden;
+            user-select: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 12px 40px -10px rgba(0,0,0,0.7);
+        }
+        .code-box-wrap:hover {
+            box-shadow: 0 20px 50px -12px rgba(0,0,0,0.8);
+            border-color: rgba(99, 102, 241, 0.2);
+        }
+        .code-box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+        }
+        .code-lang-select {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            color: #818cf8;
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            outline: none;
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+        .code-lang-select:hover {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: #818cf8;
+        }
+        .code-copy-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 5px 12px;
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .code-copy-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .code-box-content {
+            padding: 24px;
+            padding-left: 20px;
+            overflow-x: auto;
+            position: relative;
+            background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.03), transparent 200px);
+        }
+        .code-box-content pre {
+            margin: 0;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            tab-size: 4;
+            white-space: pre-wrap !important;
+            overflow-x: auto;
+        }
+        .code-box-content code {
+            outline: none !important;
+            display: block !important;
+            min-height: 1.5em;
+            white-space: pre-wrap !important; 
+            overflow-wrap: anywhere !important;
+            word-break: break-all;
+        }
+        .code-box-content code:empty:before {
+            content: attr(data-placeholder);
+            color: rgba(255, 255, 255, 0.2);
+            font-style: italic;
+        }
+        /* Custom scrollbar for code boxes */
+        .code-box-content::-webkit-scrollbar {
+            height: 6px;
+        }
+        .code-box-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .code-box-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        /* Reusing handles from images for consistency */
+        .code-box-wrap .img-drag-handle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--accent-primary);
+            border-radius: 20px;
+            padding: 6px 16px;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: grab;
+            opacity: 0;
+            transition: all 0.2s;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .code-box-wrap:hover .img-drag-handle { opacity: 1; }
+        .code-box-wrap .img-drag-handle:active { cursor: grabbing; }
+
+        .code-box-wrap .img-actions {
+            position: absolute;
+            top: 40px;
+            right: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+        .code-box-wrap:hover .img-actions { opacity: 1; }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 16px;
+        }
+
+        .primary-btn {
+            padding: 12px 32px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .primary-btn:hover {
+            transform: scale(1.05);
+            filter: brightness(1.1);
+        }
+
+        .primary-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Loading Bar for Buttons */
+        .btn-loading {
+            position: relative;
+            overflow: hidden !important;
+        }
+
+        .btn-loading .loading-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.4);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .btn-loading.processing .loading-bar {
+            width: 100%;
+            animation: loadingProgress 2s infinite linear;
+        }
+
+        @keyframes loadingProgress {
+            0% {
+                width: 0%;
+                left: 0;
+            }
+
+            50% {
+                width: 100%;
+                left: 0;
+            }
+
+            100% {
+                width: 0%;
+                left: 100%;
+            }
+        }
+
+        .secondary-btn.delete-btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .secondary-btn.delete-btn-danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: var(--danger);
+        }
+
+        .secondary-btn {
+            padding: 12px 32px;
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .secondary-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .tts-btn {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .tts-btn:hover {
+            background: rgba(245, 158, 11, 0.2);
+        }
+
+        /* Modal for images */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1e293b;
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            padding: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--glass-border);
+            border-radius: 16px;
+            padding: 40px 20px;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        /* Language specific fonts if needed */
+        .lang-sinhala {
+            font-family: 'Iskoola Pota', 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .lang-tamil {
+            font-family: 'Latha', 'Plus Jakarta Sans', sans-serif;
+        }
+
+        /* Confirmation Modal */
+        .confirm-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .confirm-modal.active { display: flex; }
+
+        .confirm-box {
+            background: #1e293b;
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            padding: 40px;
+            width: 100%;
+            max-width: 440px;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .confirm-box h2 {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+            font-weight: 800;
+        }
+
+        .confirm-box p {
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 32px;
+            font-size: 0.95rem;
+        }
+
+        .confirm-actions {
+            display: flex;
+            gap: 16px;
+        }
+
+        .confirm-actions button {
+            flex: 1;
+            padding: 14px;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .confirm-no {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+        }
+
+        .confirm-yes {
+            background: var(--danger);
+            border: none;
+            color: white;
+            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.25);
+        }
+
+        .confirm-yes:hover { transform: translateY(-2px); opacity: 0.9; }
+
+        @media (max-width: 640px) {
+            header {
+                padding: 12px 20px;
+            }
+
+            .main-container {
+                padding: 20px;
+            }
+
+            .editor-card {
+                padding: 20px;
+            }
+
+            .toolbar {
+                top: 72px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="brand-area">
+            <a id="backBtn" class="back-btn" href="resources.html">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Back
+            </a>
+            <h1 id="pageTitle">Create Blog</h1>
+        </div>
+        <div id="readAloudArea" style="display:none;">
+            <button class="secondary-btn tts-btn" id="ttsBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+                <span>Read Aloud</span>
+                <div class="loading-bar"></div>
+            </button>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <div class="editor-card">
+            <div class="form-group">
+                <label>Blog Title</label>
+                <input type="text" id="blogTitle" class="title-input" placeholder="Enter an eye-catching title...">
+            </div>
+
+            <div class="toolbar" id="editorToolbar" translate="no">
+                <button class="tool-btn" data-command="bold" title="Bold"><b>B</b></button>
+                <button class="tool-btn" data-command="italic" title="Italic"><i>I</i></button>
+                <button class="tool-btn" data-command="underline" title="Underline"><u>U</u></button>
+                <div style="width:1px; background:var(--glass-border); margin:0 4px;"></div>
+                <button class="tool-btn" data-command="justifyLeft" title="Align Left">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="17" y1="10" x2="3" y2="10"></line>
+                        <line x1="21" y1="6" x2="3" y2="6"></line>
+                        <line x1="21" y1="14" x2="3" y2="14"></line>
+                        <line x1="17" y1="18" x2="3" y2="18"></line>
+                    </svg>
+                </button>
+                <button class="tool-btn" data-command="justifyCenter" title="Align Center">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="10" x2="6" y2="10"></line>
+                        <line x1="21" y1="6" x2="3" y2="6"></line>
+                        <line x1="21" y1="14" x2="3" y2="14"></line>
+                        <line x1="18" y1="18" x2="6" y2="18"></line>
+                    </svg>
+                </button>
+                <button class="tool-btn" data-command="justifyRight" title="Align Right">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="21" y1="10" x2="7" y2="10"></line>
+                        <line x1="21" y1="6" x2="3" y2="6"></line>
+                        <line x1="21" y1="14" x2="3" y2="14"></line>
+                        <line x1="21" y1="18" x2="7" y2="18"></line>
+                    </svg>
+                </button>
+                <div style="width:1px; background:var(--glass-border); margin:0 4px;"></div>
+                <button class="tool-btn" data-command="insertUnorderedList" title="Bullet List">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                    </svg>
+                </button>
+                <button class="tool-btn" id="insertImage" title="Insert Image">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                </button>
+                <button class="tool-btn" id="insertCode" title="Insert Code Box">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="16 18 22 12 16 6"></polyline>
+                        <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                </button>
+                <div style="width:1px; background:var(--glass-border); margin:0 4px;"></div>
+                <button class="tool-btn" data-command="outdent" title="Outdent (decrease indent)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="21" y1="6" x2="3" y2="6"></line>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                        <line x1="21" y1="18" x2="3" y2="18"></line>
+                        <polyline points="7 8 3 12 7 16"></polyline>
+                    </svg>
+                </button>
+                <button class="tool-btn" data-command="indent" title="Indent (increase indent)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="21" y1="6" x2="3" y2="6"></line>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                        <line x1="21" y1="18" x2="3" y2="18"></line>
+                        <polyline points="3 8 7 12 3 16"></polyline>
+                    </svg>
+                </button>
+
+                <div style="width:1px; background:var(--glass-border); margin:0 4px;"></div>
+
+                <select class="size-selector" id="fontSelector" title="Font Size">
+                    <option value="10px">Tiny</option>
+                    <option value="13px">Small</option>
+                    <option value="16px" selected>Normal</option>
+                    <option value="18px">Large</option>
+                    <option value="24px">Extra Large</option>
+                    <option value="32px">Huge</option>
+                    <option value="48px">Giant</option>
+                </select>
+
+
+                <div class="lang-selector">
+                    <button class="lang-btn active" data-lang="en">EN</button>
+                    <button class="lang-btn" data-lang="si">SI</button>
+                    <button class="lang-btn" data-lang="ta">TA</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Blog Content</label>
+                <div id="editorContent" class="content-area" contenteditable="true"
+                    data-placeholder="Start writing your story here..."></div>
+            </div>
+
+            <div class="actions" id="editorActions">
+                <button class="secondary-btn delete-btn-danger" id="deleteBlogBtn" style="display:none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6l-1 14H6L5 6"></path>
+                        <path d="M10 11v6"></path>
+                        <path d="M14 11v6"></path>
+                        <path d="M9 6V4h6v2"></path>
+                    </svg>
+                    Delete Blog
+                </button>
+                <button class="secondary-btn" id="saveDraftBtn" style="display:none;">Save Draft</button>
+                <button class="primary-btn" id="publishBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                    <span>Publish Blog</span>
+                    <div class="loading-bar"></div>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="confirm-modal" id="confirmModal">
+        <div class="confirm-box">
+            <h2 id="confirmTitle">Confirm Action</h2>
+            <p id="confirmMsg">Are you sure you want to proceed?</p>
+            <div class="confirm-actions">
+                <button class="confirm-no" id="confirmNo">Cancel</button>
+                <button class="confirm-yes" id="confirmYes">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Upload Modal -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <h3>Insert Image</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:8px;">Choose an image to upload to your
+                blog</p>
+            <div class="upload-area" id="dropZone">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    style="margin-bottom:12px; opacity:0.5;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <p>Click or drag to upload</p>
+                <input type="file" id="imageInput" accept="image/*" style="display:none;">
+            </div>
+            <div style="display:flex; gap:12px;">
+                <button class="secondary-btn" style="flex:1;" onclick="closeImageModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Crop Modal -->
+    <div id="cropModal" class="modal">
+        <div class="modal-content" style="max-width: 800px; width: 90%;">
+            <h3>Crop Image</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:8px;">Adjust your image area</p>
+            <div style="width: 100%; max-height: 50vh; overflow: hidden; margin: 20px 0; border-radius: 12px; border: 1px solid var(--glass-border);">
+                <img id="cropperImage" src="" style="max-width: 100%; display: block;" />
+            </div>
+            <div style="display:flex; gap:12px; justify-content: flex-end;">
+                <button class="secondary-btn" onclick="closeCropModal()">Cancel</button>
+                <button class="primary-btn" id="saveCropBtn">Save Crop</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Code Modal REMOVED -->
+
+    <script type="module">
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+        import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-storage.js";
+        import { app, auth, db, storage } from "./assets/js/firebase.js";
+
+        const editorContent = document.getElementById("editorContent");
+        const blogTitle = document.getElementById("blogTitle");
+        const publishBtn = document.getElementById("publishBtn");
+        const pageTitle = document.getElementById("pageTitle");
+        const ttsBtn = document.getElementById("ttsBtn");
+        const readAloudArea = document.getElementById("readAloudArea");
+        const deleteBlogBtn = document.getElementById("deleteBlogBtn");
+        const toastContainer = document.getElementById("toastContainer");
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span>${message}</span>`;
+            toastContainer.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('fade-out');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        const confirmModal = document.getElementById("confirmModal");
+        const confirmTitle = document.getElementById("confirmTitle");
+        const confirmMsg = document.getElementById("confirmMsg");
+        const confirmYes = document.getElementById("confirmYes");
+        const confirmNo = document.getElementById("confirmNo");
+
+        function showConfirm(title, message, yesText = "Confirm", isDanger = true) {
+            return new Promise((resolve) => {
+                confirmTitle.textContent = title;
+                confirmMsg.textContent = message;
+                confirmYes.textContent = yesText;
+                confirmYes.className = isDanger ? "confirm-yes" : "confirm-yes primary"; // could support primary blue if needed
+                
+                confirmModal.classList.add("active");
+
+                const handleChoice = (choice) => {
+                    confirmModal.classList.remove("active");
+                    confirmYes.onclick = null;
+                    confirmNo.onclick = null;
+                    resolve(choice);
+                };
+
+                confirmYes.onclick = () => handleChoice(true);
+                confirmNo.onclick = () => handleChoice(false);
+            });
+        }
+
+        let currentUser = null;
+        let userData = null;
+        let currentBlogId = new URLSearchParams(window.location.search).get("id");
+        let currentCourseId = localStorage.getItem("selectedCourseId");
+        let currentModuleId = localStorage.getItem("selectedContentId");
+        let isEditMode = !!currentBlogId;
+
+        // Set back button destination based on mode
+        const backBtn = document.getElementById("backBtn");
+        backBtn.href = isEditMode ? `blog.html?id=${currentBlogId}` : "resources.html";
+
+        // Language Handling
+        document.querySelectorAll(".lang-btn").forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll(".lang-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                const lang = btn.dataset.lang;
+                editorContent.classList.remove("lang-sinhala", "lang-tamil");
+                if (lang === "si") editorContent.classList.add("lang-sinhala");
+                if (lang === "ta") editorContent.classList.add("lang-tamil");
+            };
+        });
+
+        // Toolbar Commands
+        document.querySelectorAll(".tool-btn[data-command]").forEach(btn => {
+            btn.onclick = (e) => {
+                e.preventDefault();
+                const command = btn.dataset.command;
+                document.execCommand(command, false, null);
+                btn.classList.toggle("active", document.queryCommandState(command));
+            };
+        });
+
+        const fontSelector = document.getElementById("fontSelector");
+        
+        // Use CSS styles instead of outdated HTML tags for formatting
+        document.execCommand('styleWithCSS', false, true);
+        
+        // Update toolbar states based on current selection
+        const updateToolbar = () => {
+            document.querySelectorAll(".tool-btn[data-command]").forEach(btn => {
+                const command = btn.dataset.command;
+                try {
+                    btn.classList.toggle("active", document.queryCommandState(command));
+                } catch (e) {}
+            });
+
+            // Update font size selector
+            try {
+                // Get the computed font size of the element at cursor
+                const sel = window.getSelection();
+                if (sel.rangeCount) {
+                    let node = sel.anchorNode;
+                    if (node.nodeType === 3) node = node.parentNode;
+                    const style = window.getComputedStyle(node);
+                    const size = style.fontSize;
+                    if (size) {
+                        // Match nearest option in dropdown
+                        fontSelector.value = size;
+                    }
+                }
+            } catch (e) {}
+        };
+
+        document.addEventListener("selectionchange", updateToolbar);
+        editorContent.addEventListener("keyup", updateToolbar);
+        editorContent.addEventListener("mouseup", updateToolbar);
+
+        fontSelector.onchange = () => {
+            const size = fontSelector.value;
+            const sel = window.getSelection();
+            if (sel.rangeCount) {
+                const range = sel.getRangeAt(0);
+                if (!range.collapsed) {
+                    const span = document.createElement("span");
+                    span.style.fontSize = size;
+                    try {
+                        const content = range.extractContents();
+                        span.appendChild(content);
+                        range.insertNode(span);
+                        
+                        sel.removeAllRanges();
+                        const newRange = document.createRange();
+                        newRange.selectNodeContents(span);
+                        sel.addRange(newRange);
+                    } catch (err) {
+                        // Fallback to execCommand if complex range
+                        document.execCommand("fontSize", false, "3"); // dummy for toggle
+                    }
+                }
+            }
+            editorContent.focus();
+            updateToolbar();
+        };
+
+        // Cloudinary Configuration
+        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dbnvewztc/image/upload";
+        const UPLOAD_PRESET = "CodeBase";
+
+        // Image Insertion
+        const imageModal = document.getElementById("imageModal");
+        const imageInput = document.getElementById("imageInput");
+        const dropZone = document.getElementById("dropZone");
+
+        document.getElementById("insertImage").onclick = () => imageModal.classList.add("active");
+        window.closeImageModal = () => imageModal.classList.remove("active");
+
+        // Code Insertion (Directly Editable)
+        document.getElementById("insertCode").onclick = () => {
+            insertCodeBox("", "javascript");
+        };
+
+        function insertCodeBox(code, lang) {
+            const wrap = buildCodeBox(code, lang);
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount > 0) {
+                const range = sel.getRangeAt(0);
+                range.deleteContents();
+                range.insertNode(wrap);
+                
+                // Insert a break after
+                const br = document.createElement("br");
+                wrap.parentNode.insertBefore(br, wrap.nextSibling);
+                
+                // Focus the code element
+                const codeEl = wrap.querySelector('code');
+                codeEl.focus();
+                
+                sel.removeAllRanges();
+                const newRange = document.createRange();
+                newRange.selectNodeContents(codeEl);
+                newRange.collapse(true);
+                sel.addRange(newRange);
+            } else {
+                editorContent.appendChild(wrap);
+                editorContent.appendChild(document.createElement("br"));
+                wrap.querySelector('code').focus();
+            }
+            attachFigureHandlers(wrap);
+            if (code) hljs.highlightElement(wrap.querySelector('code'));
+        }
+
+        function buildCodeBox(code, lang) {
+            const wrap = document.createElement('div');
+            wrap.className = 'code-box-wrap notranslate';
+            wrap.setAttribute('translate', 'no');
+            wrap.contentEditable = 'false';
+
+            const header = document.createElement('div');
+            header.className = 'code-box-header';
+            
+            // Language dropdown inside the box for easy access
+            const langSelect = document.createElement('select');
+            langSelect.className = 'code-lang-select';
+            const langs = ["javascript", "python", "html", "css", "cpp", "java", "php", "sql", "plaintext"];
+            langs.forEach(l => {
+                const opt = document.createElement('option');
+                opt.value = l;
+                opt.textContent = l.toUpperCase();
+                if (l === lang) opt.selected = true;
+                langSelect.appendChild(opt);
+            });
+            langSelect.onchange = () => {
+                const codeEl = wrap.querySelector('code');
+                codeEl.className = `language-${langSelect.value}`;
+                hljs.highlightElement(codeEl);
+            };
+
+            const actions = document.createElement('div');
+            actions.style.display = 'flex';
+            actions.style.gap = '8px';
+            actions.style.alignItems = 'center';
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'code-copy-btn';
+            copyBtn.innerHTML = `
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg> Copy
+            `;
+            copyBtn.onclick = () => window.copyCodeFromBtn(copyBtn);
+
+            header.appendChild(langSelect);
+            actions.appendChild(copyBtn);
+            header.appendChild(actions);
+
+            const content = document.createElement('div');
+            content.className = 'code-box-content';
+            
+            const pre = document.createElement('pre');
+            const codeEl = document.createElement('code');
+            codeEl.className = `language-${lang}`;
+            codeEl.contentEditable = 'true';
+            codeEl.spellcheck = false;
+            
+            // Initial placeholder behavior
+            if (!code) {
+                codeEl.setAttribute('data-placeholder', 'Enter code here...');
+            }
+
+            const escapedCode = code
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+            codeEl.innerHTML = escapedCode || "";
+            pre.appendChild(codeEl);
+            content.appendChild(pre);
+
+            // Live Highlighting with Debounce and Caret Restoration
+            let highlightTimeout;
+            const triggerHighlight = () => {
+                clearTimeout(highlightTimeout);
+                highlightTimeout = setTimeout(() => {
+                    const savedSelection = saveCaretPosition(codeEl);
+                    hljs.highlightElement(codeEl);
+                    restoreCaretPosition(codeEl, savedSelection);
+                }, 1000);
+            };
+
+            codeEl.addEventListener('input', triggerHighlight);
+
+            // Force Plain Text Paste and manage newlines
+            codeEl.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const text = e.clipboardData.getData('text/plain');
+                
+                // More robust text insertion for multi-line preservation
+                const selection = window.getSelection();
+                if (!selection.rangeCount) return;
+                
+                const range = selection.getRangeAt(0);
+                range.deleteContents();
+                
+                // Create a text node for the whole block to ensure \n are handled by white-space: pre-wrap
+                const textNode = document.createTextNode(text);
+                range.insertNode(textNode);
+                
+                // Move selection to end of pasted text
+                range.setStartAfter(textNode);
+                range.setEndAfter(textNode);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                triggerHighlight();
+            });
+
+            // Tab key support
+            codeEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    document.execCommand('insertText', false, '    ');
+                }
+            });
+
+            const resizeHandle = document.createElement('div');
+            resizeHandle.className = 'img-resize-handle';
+            
+            const dragHandle = document.createElement('div');
+            dragHandle.className = 'img-drag-handle';
+            dragHandle.innerHTML = `
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="9" cy="5" r="2"/><circle cx="15" cy="5" r="2"/>
+                    <circle cx="9" cy="12" r="2"/><circle cx="15" cy="12" r="2"/>
+                    <circle cx="9" cy="19" r="2"/><circle cx="15" cy="19" r="2"/>
+                </svg> DRAG`;
+
+            const actionsBar = document.createElement('div');
+            actionsBar.className = 'img-actions';
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'img-action-btn delete-btn';
+            deleteBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+            deleteBtn.onclick = () => { if(confirm('Remove code box?')) wrap.remove(); };
+            actionsBar.appendChild(deleteBtn);
+
+            wrap.appendChild(header);
+            wrap.appendChild(content);
+            wrap.appendChild(resizeHandle);
+            wrap.appendChild(dragHandle);
+            wrap.appendChild(actionsBar);
+            return wrap;
+        }
+
+        // Caret Helpers for Live Highlighting in contenteditable
+        function saveCaretPosition(el) {
+            const sel = window.getSelection();
+            if (sel.rangeCount === 0) return null;
+            const range = sel.getRangeAt(0);
+            const preSelectionRange = range.cloneRange();
+            preSelectionRange.selectNodeContents(el);
+            preSelectionRange.setEnd(range.startContainer, range.startOffset);
+            return preSelectionRange.toString().length;
+        }
+
+        function restoreCaretPosition(el, offset) {
+            if (offset === null) return;
+            const sel = window.getSelection();
+            const range = document.createRange();
+            let currentOffset = 0;
+            const nodeStack = [el];
+            let found = false;
+
+            while (nodeStack.length > 0 && !found) {
+                const node = nodeStack.pop();
+                if (node.nodeType === 3) {
+                    const nextOffset = currentOffset + node.length;
+                    if (offset >= currentOffset && offset <= nextOffset) {
+                        range.setStart(node, offset - currentOffset);
+                        range.setEnd(node, offset - currentOffset);
+                        found = true;
+                    }
+                    currentOffset = nextOffset;
+                } else {
+                    let i = node.childNodes.length;
+                    while (i--) nodeStack.push(node.childNodes[i]);
+                }
+            }
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+
+        window.copyCodeFromBtn = (btn) => {
+            const wrap = btn.closest('.code-box-wrap');
+            const code = wrap.querySelector('code').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const orig = btn.innerHTML;
+                btn.innerHTML = `
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg> Copied!
+                `;
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.innerHTML = orig;
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        };
+
+        dropZone.onclick = () => imageInput.click();
+
+        imageInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) uploadImage(file);
+        };
+
+        // Drag & Drop for Editor
+        editorContent.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            editorContent.style.borderColor = "var(--accent-primary)";
+            editorContent.style.background = "rgba(255, 255, 255, 0.05)";
+        });
+
+        editorContent.addEventListener("dragleave", () => {
+            editorContent.style.borderColor = "var(--glass-border)";
+            editorContent.style.background = "none";
+        });
+
+        editorContent.addEventListener("drop", async (e) => {
+            e.preventDefault();
+            editorContent.style.borderColor = "var(--glass-border)";
+            editorContent.style.background = "none";
+
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith("image/")) {
+                // Set cursor position at drop point
+                if (document.caretRangeFromPoint) {
+                    const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+
+                uploadImage(file);
+            }
+        });
+
+        async function uploadImage(file) {
+            const originalBtnText = dropZone.innerHTML;
+            dropZone.innerHTML = "<p>Uploading...</p>";
+
+            try {
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("upload_preset", UPLOAD_PRESET);
+
+                const response = await fetch(CLOUDINARY_URL, {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error("Cloudinary upload failed");
+
+                const data = await response.json();
+                const url = data.secure_url;
+
+                // Insert into editor at current selection (or drop point)
+                editorContent.focus();
+                insertImageFigure(url);
+
+                imageModal.classList.remove("active");
+            } catch (err) {
+                alert("Upload failed: " + err.message);
+            } finally {
+                dropZone.innerHTML = originalBtnText;
+            }
+        }
+
+        // =============================================
+        //  IMAGE FIGURE SYSTEM: Insert, Drag, Resize
+        // =============================================
+        function insertImageFigure(url, widthPx) {
+            const figure = buildFigure(url, widthPx);
+            // Try to insert at selection, else append
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount > 0) {
+                const range = sel.getRangeAt(0);
+                range.deleteContents();
+                range.insertNode(figure);
+                // Place cursor after
+                range.setStartAfter(figure);
+                range.setEndAfter(figure);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } else {
+                editorContent.appendChild(figure);
+            }
+            attachFigureHandlers(figure);
+        }
+
+        function buildFigure(url, widthPx) {
+            const figure = document.createElement('figure');
+            figure.className = 'editor-img-wrap';
+            figure.contentEditable = 'false';
+            figure.draggable = false; // we control drag from handle only
+
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = 'Blog Image';
+            img.style.width = widthPx ? widthPx + 'px' : '100%';
+
+            const dragHandle = document.createElement('div');
+            dragHandle.className = 'img-drag-handle';
+            dragHandle.setAttribute('translate', 'no');
+            dragHandle.innerHTML = `
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="9" cy="5" r="2"/><circle cx="15" cy="5" r="2"/>
+                    <circle cx="9" cy="12" r="2"/><circle cx="15" cy="12" r="2"/>
+                    <circle cx="9" cy="19" r="2"/><circle cx="15" cy="19" r="2"/>
+                </svg>`;
+
+            const resizeHandle = document.createElement('div');
+            resizeHandle.className = 'img-resize-handle';
+            resizeHandle.title = 'Drag to resize';
+            resizeHandle.setAttribute('translate', 'no');
+
+            // Action bar: Edit + Delete
+            const actionsBar = document.createElement('div');
+            actionsBar.className = 'img-actions';
+            actionsBar.setAttribute('translate', 'no');
+
+            const editBtn = document.createElement('button');
+            editBtn.className = 'img-action-btn edit-btn';
+            editBtn.title = 'Edit / Re-crop image';
+            editBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'img-action-btn delete-btn';
+            deleteBtn.title = 'Remove image';
+            deleteBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+
+            actionsBar.appendChild(editBtn);
+            actionsBar.appendChild(deleteBtn);
+
+            figure.appendChild(img);
+            figure.appendChild(dragHandle);
+            figure.appendChild(resizeHandle);
+            figure.appendChild(actionsBar);
+            return figure;
+        }
+
+        // Track which figure is being dragged
+        let draggingFigure = null;
+        let dropCaretEl = null;
+
+        function attachFigureHandlers(figure) {
+            const dragHandle = figure.querySelector('.img-drag-handle');
+            const resizeHandle = figure.querySelector('.img-resize-handle');
+            const img = figure.querySelector('img');
+
+            // --- Drag to reposition ---
+            dragHandle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                draggingFigure = figure;
+                figure.classList.add('drag-over');
+
+                // Create drop caret
+                dropCaretEl = document.createElement('span');
+                dropCaretEl.className = 'drop-caret';
+
+                const onMouseMove = (ev) => {
+                    // Find the caret position under the mouse
+                    const el = document.elementFromPoint(ev.clientX, ev.clientY);
+                    if (el && editorContent.contains(el) && el !== figure && !figure.contains(el)) {
+                        const range = document.caretRangeFromPoint
+                            ? document.caretRangeFromPoint(ev.clientX, ev.clientY)
+                            : (document.caretPositionFromPoint
+                                ? (() => {
+                                    const pos = document.caretPositionFromPoint(ev.clientX, ev.clientY);
+                                    const r = document.createRange();
+                                    r.setStart(pos.offsetNode, pos.offset);
+                                    return r;
+                                  })()
+                                : null);
+                        if (range) {
+                            range.insertNode(dropCaretEl);
+                        }
+                    }
+                };
+
+                const onMouseUp = (ev) => {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    figure.classList.remove('drag-over');
+
+                    if (dropCaretEl && dropCaretEl.parentNode) {
+                        // Insert the figure at the caret position
+                        dropCaretEl.parentNode.insertBefore(figure, dropCaretEl);
+                        dropCaretEl.parentNode.removeChild(dropCaretEl);
+                    }
+                    dropCaretEl = null;
+                    draggingFigure = null;
+                };
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+
+            // --- Resize ---
+            let isResizing = false, startX, startW;
+            resizeHandle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                isResizing = true;
+                startX = e.clientX;
+                
+                // Determine if we are resizing an image or a code box
+                const targetEl = img ? img : figure;
+                startW = targetEl.offsetWidth;
+                
+                const onMove = (ev) => {
+                    if (!isResizing) return;
+                    const dx = ev.clientX - startX;
+                    const newW = Math.max(100, startW + dx);
+                    targetEl.style.width = newW + 'px';
+                };
+                const onUp = () => {
+                    isResizing = false;
+                    document.removeEventListener('mousemove', onMove);
+                    document.removeEventListener('mouseup', onUp);
+                };
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+            });
+
+            // --- Edit button → open crop modal ---
+            const editBtn = figure.querySelector('.edit-btn');
+            editBtn.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+            editBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                activeCropImg = img;
+                cropperImg.src = img.src;
+                cropModal.classList.add("active");
+                if (cropperInstance) cropperInstance.destroy();
+                cropperInstance = new Cropper(cropperImg, { viewMode: 2, autoCropArea: 1 });
+            });
+
+            // --- Double-click also opens crop (power-user shortcut) ---
+            img.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                activeCropImg = img;
+                cropperImg.src = img.src;
+                cropModal.classList.add("active");
+                if (cropperInstance) cropperInstance.destroy();
+                cropperInstance = new Cropper(cropperImg, { viewMode: 2, autoCropArea: 1 });
+            });
+
+            // --- Delete button → remove figure ---
+            const deleteBtn = figure.querySelector('.delete-btn');
+            deleteBtn.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('Remove this image from the blog?')) {
+                    figure.remove();
+                }
+            });
+        }
+
+        // Re-attach handlers to any existing images added (e.g. from db load)
+        function reAttachAllFigures() {
+            editorContent.querySelectorAll('.editor-img-wrap').forEach(fig => {
+                // Upgrade legacy figures that were saved without the UI controls
+                if (!fig.querySelector('.img-drag-handle')) {
+                    const dragHandle = document.createElement('div');
+                    dragHandle.className = 'img-drag-handle';
+                    dragHandle.setAttribute('translate', 'no');
+                    dragHandle.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="2"/><circle cx="15" cy="5" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="9" cy="19" r="2"/><circle cx="15" cy="19" r="2"/></svg> Drag`;
+                    fig.appendChild(dragHandle);
+                }
+                if (!fig.querySelector('.img-resize-handle')) {
+                    const resizeHandle = document.createElement('div');
+                    resizeHandle.className = 'img-resize-handle';
+                    resizeHandle.setAttribute('translate', 'no');
+                    resizeHandle.title = 'Drag to resize';
+                    fig.appendChild(resizeHandle);
+                }
+                if (!fig.querySelector('.img-actions')) {
+                    const actionsBar = document.createElement('div');
+                    actionsBar.className = 'img-actions';
+                    actionsBar.setAttribute('translate', 'no');
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'img-action-btn edit-btn';
+                    editBtn.title = 'Edit / Re-crop image';
+                    editBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit`;
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'img-action-btn delete-btn';
+                    deleteBtn.title = 'Remove image';
+                    deleteBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg> Delete`;
+                    actionsBar.appendChild(editBtn);
+                    actionsBar.appendChild(deleteBtn);
+                    fig.appendChild(actionsBar);
+                }
+                if (!fig.dataset.attached) {
+                    fig.dataset.attached = '1';
+                    attachFigureHandlers(fig);
+                }
+            });
+
+            // Handle code boxes
+            editorContent.querySelectorAll('.code-box-wrap').forEach(wrap => {
+                if (!wrap.querySelector('.img-drag-handle')) {
+                    // Re-inject UI if missing (e.g. legacy load)
+                    // ... actually the logic below handles removal of UI before save
+                    // so we need to rebuild the header and UI on load if they were stripped
+                }
+                
+                // For now, if it was saved as clean HTML, we might need a more robust rebuild
+                // but since we save with the header, we just need to reattach handlers
+                const copyBtn = wrap.querySelector('.code-copy-btn');
+                if (copyBtn) {
+                    copyBtn.onclick = () => window.copyCodeFromBtn(copyBtn);
+                }
+                
+                if (!wrap.dataset.attached) {
+                    wrap.dataset.attached = '1';
+                    attachFigureHandlers(wrap);
+                    // Re-highlight
+                    hljs.highlightElement(wrap.querySelector('code'));
+                }
+            });
+        }
+
+        // Cropping Logic
+        let activeCropImg = null;
+        let cropperInstance = null;
+        const cropModal = document.getElementById("cropModal");
+        const cropperImg = document.getElementById("cropperImage");
+
+        window.closeCropModal = () => {
+            cropModal.classList.remove("active");
+            if (cropperInstance) {
+                cropperInstance.destroy();
+                cropperInstance = null;
+            }
+            activeCropImg = null;
+        };
+
+        document.getElementById("saveCropBtn").onclick = async () => {
+            if (!cropperInstance || !activeCropImg) return;
+            
+            const saveBtn = document.getElementById("saveCropBtn");
+            const origText = saveBtn.innerText;
+            saveBtn.innerText = "Saving...";
+            saveBtn.disabled = true;
+
+            try {
+                cropperInstance.getCroppedCanvas({
+                    maxWidth: 1920,
+                    maxHeight: 1080
+                }).toBlob(async (blob) => {
+                    if (!blob) throw new Error("Could not create image blob");
+                    const formData = new FormData();
+                    formData.append("file", blob);
+                    formData.append("upload_preset", UPLOAD_PRESET);
+
+                    const response = await fetch(CLOUDINARY_URL, {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    if (!response.ok) throw new Error("Cloudinary crop upload failed");
+                    const data = await response.json();
+                    
+                    activeCropImg.src = data.secure_url;
+                    closeCropModal();
+                }, "image/jpeg", 0.9);
+            } catch(err) {
+                alert("Crop save failed: " + err.message);
+            } finally {
+                saveBtn.innerText = origText;
+                saveBtn.disabled = false;
+            }
+        };
+
+        // Auth & Initial Load
+        onAuthStateChanged(auth, async user => {
+            if (!user) {
+                window.location.href = "login.html";
+                return;
+            }
+            currentUser = user;
+            const [userSnap, systemSnap] = await Promise.all([
+                getDoc(doc(db, "users", user.uid)),
+                getDoc(doc(db, "system", "settings"))
+            ]);
+
+            if (userSnap.exists()) {
+                userData = userSnap.data();
+            }
+
+            const systemData = systemSnap.exists() ? systemSnap.data() : {};
+            const canUpload = systemData.communityUploads !== false;
+            const isOwner = userData?.role === "owner";
+
+            if (!canUpload && !isOwner && !isEditMode) {
+                alert("Community hub uploads are currently disabled by administrator.");
+                window.location.href = "resources.html";
+                return;
+            }
+
+            // Also disable publish button in edit mode if uploads are disabled
+            if (!canUpload && !isOwner && isEditMode) {
+                publishBtn.disabled = true;
+                publishBtn.style.opacity = "0.5";
+                publishBtn.title = "Uploads are currently disabled";
+            }
+
+            if (isEditMode) {
+                loadBlogData();
+            } else {
+                if (!userData) {
+                    window.location.href = "login.html";
+                }
+            }
+        });
+
+        async function loadBlogData() {
+            try {
+                const blogSnap = await getDoc(doc(db, "community_resources", currentBlogId));
+                if (blogSnap.exists()) {
+                    const data = blogSnap.data();
+
+                    // Permission Check
+                    const isAdmin = userData?.role === 'admin' || userData?.role === 'owner';
+                    const isOwner = data.uploadedByUid === currentUser.uid;
+
+                    if (!isAdmin && !isOwner) {
+                        // READ MODE
+                        pageTitle.textContent = "View Blog";
+                        document.getElementById("editorToolbar").style.display = "none";
+                        publishBtn.style.display = "none";
+                        deleteBlogBtn.style.display = "none";
+                        editorContent.contentEditable = "false";
+                        blogTitle.readOnly = true;
+                        blogTitle.style.border = "none";
+                        blogTitle.style.background = "none";
+                        blogTitle.style.padding = "0";
+                    } else {
+                        pageTitle.textContent = "Edit Blog";
+                        deleteBlogBtn.style.display = "flex";
+                        publishBtn.innerHTML = `
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                            <span>Update Blog</span>
+                            <div class="loading-bar"></div>
+                        `;
+                    }
+
+                    blogTitle.value = data.title;
+                    editorContent.innerHTML = data.content;
+                    reAttachAllFigures(); // restore drag/resize on load
+
+                    // Show TTS
+                    readAloudArea.style.display = "block";
+                }
+            } catch (err) {
+                console.error("Error loading blog:", err);
+            }
+        }
+
+        // Final Robust TTS System (No-Referrer Iframe Hack + Neural)
+        let ttsAudio = new Audio();
+        let ttsQueue = [];
+        let ttsIndex = 0;
+        let availableVoices = [];
+
+        // Hidden iframe with no-referrer policy (Bypasses Google's 404 anti-hotlinking)
+        const ttsFrame = document.createElement('iframe');
+        ttsFrame.style.display = 'none';
+        ttsFrame.setAttribute('referrerpolicy', 'no-referrer');
+        document.body.appendChild(ttsFrame);
+
+        const loadVoices = () => {
+            availableVoices = window.speechSynthesis.getVoices();
+        };
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+        setInterval(loadVoices, 500);
+
+        ttsBtn.onclick = () => {
+            if (ttsBtn.classList.contains("processing")) {
+                speechSynthesis.cancel();
+                ttsAudio.pause();
+                ttsAudio.src = "";
+                ttsQueue = [];
+                ttsIndex = 0;
+                ttsBtn.classList.remove("processing", "btn-loading");
+                ttsBtn.querySelector("span").textContent = "Read Aloud";
+                return;
+            }
+
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = editorContent.innerHTML;
+            
+            // Sanitization: Remove hidden editor UI
+            tempDiv.querySelectorAll('.img-drag-handle, .img-resize-handle, .img-actions').forEach(el => el.remove());
+
+            // Robust text extraction with forced newlines for blocks
+            let text = "";
+            const blockTags = ["P", "DIV", "H1", "H2", "H3", "H4", "H5", "H6", "LI", "BLOCKQUOTE", "BR"];
+            const walk = (node) => {
+                if (node.nodeType === 3) {
+                    // Normalize internal whitespace to prevent unintended wraps from breaking the sentence
+                    text += node.textContent.replace(/[\n\r]+/g, ' ');
+                } else if (node.nodeType === 1) {
+                    const isBlock = blockTags.includes(node.tagName);
+                    if (isBlock && text && !text.endsWith("\n")) text += "\n";
+                    node.childNodes.forEach(child => walk(child));
+                    if (isBlock && !text.endsWith("\n")) text += "\n";
+                }
+            };
+            walk(tempDiv);
+            text = text.replace(/[ ]+/g, ' ').replace(/[\n\r]{2,}/g, '\n\n').trim();
+            
+            if (!text) return;
+
+            speechSynthesis.cancel();
+            ttsAudio.pause();
+            ttsAudio.src = "";
+
+            ttsQueue = [];
+            ttsIndex = 0;
+
+            // Split into paragraphs/lines to create natural pauses between them
+            const lines = text.split('\n');
+            const processedQueue = [];
+
+            lines.forEach((line, lineIndex) => {
+                const trimmed = line.trim();
+                if (!trimmed) {
+                    processedQueue.push({ pause: 400 });
+                    return;
+                }
+
+                // Detect languages within this line
+                let currentLang = 'en';
+                let currentText = '';
+                
+                for (let char of trimmed) {
+                    const code = char.charCodeAt(0);
+                    let charLang = 'en';
+                    if (code >= 0x0D80 && code <= 0x0DFF) charLang = 'si';
+                    else if (code >= 0x0B80 && code <= 0x0BFF) charLang = 'ta';
+                    else if (/[\s\d\W]/.test(char)) charLang = currentLang;
+
+                    if (charLang !== currentLang && currentText.trim()) {
+                        processedQueue.push({ text: currentText.trim(), lang: currentLang === 'en' ? 'en-US' : (currentLang === 'si' ? 'si-LK' : 'ta-IN') });
+                        currentText = '';
+                        currentLang = charLang;
+                    } else if (charLang !== currentLang && !currentText.trim()) {
+                        currentLang = charLang;
+                    }
+                    currentText += char;
+                }
+                if (currentText.trim()) processedQueue.push({ text: currentText.trim(), lang: currentLang === 'en' ? 'en-US' : (currentLang === 'si' ? 'si-LK' : 'ta-IN') });
+
+                // End of a line = mandatory pause
+                processedQueue.push({ pause: 600 });
+            });
+
+            // Split long sentences within chunks while maintaining language
+            const final = [];
+            processedQueue.forEach(item => {
+                if (item.pause) {
+                    final.push(item);
+                    return;
+                }
+                const chunks = item.text.match(/.{1,150}(\.|\?|!|\s|$)/g) || [item.text];
+                chunks.forEach(c => {
+                    const ct = c.trim();
+                    if (ct) final.push({ text: ct, lang: item.lang });
+                });
+            });
+            ttsQueue = final;
+
+            if (ttsQueue.length > 0) {
+                ttsBtn.classList.add("processing", "btn-loading");
+                ttsBtn.querySelector("span").textContent = "Preparing...";
+                speakNextChunk();
+            }
+        };
+
+        function speakNextChunk() {
+            if (ttsIndex >= ttsQueue.length) {
+                ttsBtn.classList.remove("processing", "btn-loading");
+                ttsBtn.querySelector("span").textContent = "Read Aloud";
+                return;
+            }
+
+            const item = ttsQueue[ttsIndex];
+
+            // Handle explicit pauses
+            if (item.pause) {
+                setTimeout(() => {
+                    if (!ttsBtn.classList.contains("processing")) return; // if user stopped it
+                    ttsIndex++;
+                    speakNextChunk();
+                }, item.pause);
+                return;
+            }
+
+            const langPrefix = item.lang.split('-')[0];
+            ttsBtn.querySelector("span").textContent = `Reading (${langPrefix})...`;
+
+            loadVoices();
+            const voice = availableVoices.find(v => v.lang.startsWith(langPrefix) && (v.name.includes("Online") || v.name.includes("Natural") || v.localService === false)) ||
+                availableVoices.find(v => v.lang.startsWith(langPrefix)) ||
+                availableVoices.find(v => v.name.toLowerCase().includes(langPrefix === 'si' ? 'sinhala' : 'tamil'));
+
+            if (voice) {
+                const utterance = new SpeechSynthesisUtterance(item.text);
+                utterance.voice = voice;
+                utterance.lang = item.lang;
+                utterance.rate = 1.0;
+
+                utterance.onend = () => {
+                    ttsIndex++;
+                    speakNextChunk();
+                };
+                utterance.onerror = () => playGoogleFallback(item);
+                speechSynthesis.speak(utterance);
+            } else {
+                playGoogleFallback(item);
+            }
+        }
+
+        function playGoogleFallback(item) {
+            const tl = item.lang.split('-')[0];
+            const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(item.text)}&tl=${tl}&client=tw-ob`;
+
+            // By setting src on a no-referrer iframe, we mimic the "direct browse" link behavior you found
+            ttsFrame.src = url;
+            const charDelay = 85;
+            setTimeout(() => {
+                ttsIndex++;
+                speakNextChunk();
+            }, item.text.length * charDelay + 1000);
+        }
+
+        // Delete Logic
+        deleteBlogBtn.onclick = async () => {
+            const confirmed = await showConfirm("Delete Blog", "Are you sure you want to delete this blog? This action cannot be undone.");
+            if (!confirmed) return;
+
+            deleteBlogBtn.disabled = true;
+            deleteBlogBtn.classList.add("processing", "btn-loading");
+            
+            try {
+                await updateDoc(doc(db, "community_resources", currentBlogId), {
+                    isHidden: true,
+                    deletedAt: serverTimestamp()
+                });
+                showToast("Blog deleted successfully", "success");
+                setTimeout(() => window.location.href = "resources.html", 1500);
+            } catch (err) {
+                showToast("Deletion failed: " + err.message, "error");
+                deleteBlogBtn.disabled = false;
+                deleteBlogBtn.classList.remove("processing", "btn-loading");
+            }
+        };
+
+        // Publish Logic
+        publishBtn.onclick = async () => {
+            const title = blogTitle.value.trim();
+
+            // Deep clone and clean everything editor-only
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = editorContent.innerHTML;
+            
+            // 1. Remove obvious UI handles and labels
+            tempDiv.querySelectorAll('.img-drag-handle, .img-resize-handle, .img-actions').forEach(el => el.remove());
+            
+            // 2. Remove ANY leftover button text that might have been injected/translated
+            tempDiv.querySelectorAll('.img-action-btn').forEach(btn => btn.remove());
+            
+            // 3. Clean wrap attributes and their editable children
+            tempDiv.querySelectorAll('.editor-img-wrap, .code-box-wrap').forEach(fig => {
+                fig.removeAttribute('contenteditable');
+                fig.removeAttribute('draggable');
+                fig.removeAttribute('data-attached');
+                
+                // Deep clean children
+                fig.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+                fig.querySelectorAll('[spellcheck]').forEach(el => el.removeAttribute('spellcheck'));
+                
+                // Remove buttons and handles specifically
+                fig.querySelectorAll('.img-drag-handle, .img-resize-handle, .img-actions, .code-copy-btn-wrap').forEach(el => el.remove());
+                
+                // Clean stray text in figure/wrap (except for the code content itself)
+                Array.from(fig.childNodes).forEach(node => {
+                    if (node.nodeType === 3 && !fig.classList.contains('code-box-wrap')) node.remove(); 
+                });
+            });
+
+            // 4. Final sweep for any leftover browser-translation markers or empty spans
+            tempDiv.querySelectorAll('span:empty, font:empty, b:empty, i:empty').forEach(el => el.remove());
+
+            const content = tempDiv.innerHTML.trim();
+
+            if (!title || !content || content === "<br>") {
+                showToast("Please provide both title and content.", "error");
+                return;
+            }
+
+            publishBtn.disabled = true;
+            publishBtn.classList.add("processing", "btn-loading");
+            publishBtn.querySelector("span").textContent = isEditMode ? "Updating..." : "Publishing...";
+
+            try {
+                if (isEditMode) {
+                    const updateData = {
+                        title: title,
+                        content: content,
+                        updatedAt: serverTimestamp()
+                    };
+                    await updateDoc(doc(db, "community_resources", currentBlogId), updateData);
+                    showToast("Blog updated successfully!");
+                    setTimeout(() => window.location.href = `blog.html?id=${currentBlogId}`, 1500);
+                } else {
+                    const blogData = {
+                        title: title,
+                        type: "blog",
+                        content: content,
+                        ownerReg: userData.registrationNumber || "N/A",
+                        uploadedBy: userData.name || "Unknown",
+                        uploadedByUid: currentUser.uid,
+                        updatedAt: serverTimestamp(),
+                        uploadedAt: serverTimestamp(),
+                        courseId: currentCourseId || "",
+                        moduleId: currentModuleId || "",
+                        link: "",
+                        likes: [],
+                        dislikes: [],
+                        commentCount: 0,
+                        isOriginal: true
+                    };
+                    const docRef = await addDoc(collection(db, "community_resources"), blogData);
+                    currentBlogId = docRef.id;
+                    showToast("Blog published successfully!");
+                    setTimeout(() => window.location.href = `blog.html?id=${currentBlogId}`, 1500);
+                }
+            } catch (err) {
+                showToast("Operation failed: " + err.message, "error");
+                publishBtn.disabled = false;
+                publishBtn.classList.remove("processing", "btn-loading");
+                publishBtn.querySelector("span").textContent = isEditMode ? "Update Blog" : "Publish Blog";
+            }
+        };
+    </script>
+</body>
+
+</html>
