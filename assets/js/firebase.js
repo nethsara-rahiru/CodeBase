@@ -32,17 +32,27 @@ const firebaseConfig = {
   measurementId: "G-DTPQ1PHCBN"
 };
 
+console.log("Firebase SDK loading...");
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-// Initialize Firestore with modern persistence settings
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-const db = initializeFirestore(app, {
-  cache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager()
-  })
-});
+// Initialize Firestore with modern persistence settings
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, getFirestore } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+let db;
+try {
+  db = initializeFirestore(app, {
+    cache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager()
+    })
+  });
+  console.log("Firestore initialized with persistence");
+} catch (e) {
+  console.warn("Firestore persistence failed, falling back to default:", e);
+  db = getFirestore(app);
+}
 
 const provider = new GoogleAuthProvider();
 
@@ -179,24 +189,48 @@ window.handleUserAuth = async function (user) {
 
 window.googleLogin = async function () {
   try {
-    // Robust mobile detection
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
                     (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
     
-    if (isMobile) {
-      // Use redirect mode for mobile to ensure compatibility with WebViews
-      // Note: This causes a page reload. Result is picked up by getRedirectResult.
-      console.log("Mobile detected, using redirect...");
-      await signInWithRedirect(auth, provider);
-    } else {
-      // Stick to popup for desktop
+    console.log("Login start. Mobile:", isMobile);
+
+    // Detect Private/Incognito mode (best effort)
+    try {
+      localStorage.setItem('test', '1');
+      localStorage.removeItem('test');
+    } catch (e) {
+      alert("It seems you are in Private/Incognito mode. This can prevent login on mobile. Please try in a normal tab.");
+      return;
+    }
+
+    // Attempt popup first
+    try {
+      console.log("Popup attempt...");
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
         await window.handleUserAuth(result.user);
+        return;
       }
+    } catch (popupErr) {
+      console.warn("Popup failed:", popupErr.code);
+      
+      // auth/popup-closed-by-user is common and shouldn't trigger redirect
+      if (popupErr.code === "auth/popup-closed-by-user") {
+        throw new Error("Login cancelled.");
+      }
+
+      // If popup fails/blocked, use redirect
+      console.log("Falling back to redirect...");
+      
+      // Check for HTTPS requirement
+      if (window.location.protocol !== "https:" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+        alert("Mobile login often fails on non-HTTPS connections. If you're testing on a phone, please ensure you use HTTPS.");
+      }
+      
+      await signInWithRedirect(auth, provider);
     }
   } catch (err) {
-    console.error("Login failed:", err);
+    console.error("Google Login Error:", err);
     throw err;
   }
 };
