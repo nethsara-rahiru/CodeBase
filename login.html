@@ -275,7 +275,7 @@
         <h1 class="brand-title">CodeBase</h1>
         <p class="subtitle">Personalized learning hub for university students. Login to continue.</p>
 
-        <button id="googleBtn" class="google-btn" onclick="handleGoogleLogin()">
+        <button id="googleBtn" class="google-btn">
             <img src="assets/img/gLogo.png" alt="Google">
             Continue with Google
         </button>
@@ -292,20 +292,33 @@
     </div>
 
     <script type="module">
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-        import { app } from "./assets/js/firebase.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+        import { app, auth } from "./assets/js/firebase.js";
 
-        const auth = getAuth(app);
         const btn = document.getElementById("googleBtn");
         const loading = document.getElementById("loading");
 
         // FAST REDIRECT IF SESSION EXISTS
         onAuthStateChanged(auth, async (user) => {
             if (user) {
+                btn.disabled = true;
+                btn.style.opacity = "0.7";
                 loading.style.display = "block";
                 loading.textContent = "Verifying account... Please wait";
                 try {
-                    await window.handleUserAuth(user);
+                    // window.handleUserAuth is defined in firebase.js
+                    if (typeof window.handleUserAuth === 'function') {
+                        await window.handleUserAuth(user);
+                    } else {
+                        console.warn("handleUserAuth not yet available, waiting...");
+                        // Polling as a fallback if module execution is delayed
+                        const checkAuth = setInterval(async () => {
+                            if (typeof window.handleUserAuth === 'function') {
+                                clearInterval(checkAuth);
+                                await window.handleUserAuth(user);
+                            }
+                        }, 100);
+                    }
                 } catch (error) {
                     console.error("Auth check failed:", error);
                     loading.style.display = "none";
@@ -315,7 +328,7 @@
             }
         });
 
-        window.handleGoogleLogin = async function () {
+        const handleGoogleLogin = async function () {
             btn.disabled = true;
             btn.style.opacity = "0.7";
             loading.style.display = "block";
@@ -323,7 +336,14 @@
 
             try {
                 // calls window.googleLogin defined in firebase.js
-                await window.googleLogin();
+                if (typeof window.googleLogin === 'function') {
+                    await window.googleLogin();
+                } else {
+                    alert("System is still initializing. Please wait a moment.");
+                    btn.disabled = false;
+                    btn.style.opacity = "1";
+                    loading.style.display = "none";
+                }
             } catch (error) {
                 console.error("Login error:", error);
                 alert("Authentication failed: " + (error.message || "Please check your connection."));
@@ -332,6 +352,8 @@
                 loading.style.display = "none";
             }
         };
+
+        btn.addEventListener("click", handleGoogleLogin);
     </script>
 
     <script type="module" src="assets/js/firebase.js"></script>

@@ -441,7 +441,7 @@
       </div>
       <div id="phoneVal" class="val-message"></div>
 
-      <button id="submitBtn" onclick="submitRegistration()">
+      <button id="submitBtn">
         <span id="btnText">Complete Registration</span>
         <div id="btnSpinner" class="loading-spinner"></div>
       </button>
@@ -501,6 +501,7 @@
     });
 
     function formatRegNo(raw) {
+      if (!raw) return "";
       raw = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
       if (raw.length < 4) return raw;
 
@@ -559,7 +560,7 @@
     });
     regnoInput.addEventListener("input", () => regnoInput.classList.remove("input-error"));
 
-    window.submitRegistration = function() {
+    const submitRegistration = function() {
       const regnoVal = regnoInput.value.trim();
       const phone = phoneInput.value.trim();
       const levelSelect = document.getElementById("level");
@@ -607,8 +608,17 @@
 
       formatRegNo(regnoVal.replace(/\//g, "")); 
 
-      window.registerUser(regnoVal, phone, level, semester, currentStream);
+      if (typeof window.registerUser === 'function') {
+        window.registerUser(regnoVal, phone, level, semester, currentStream);
+      } else {
+        alert("Registration system is still initializing. Please try again in a moment.");
+        submitBtn.disabled = false;
+        btnText.style.display = "block";
+        btnSpinner.style.display = "none";
+      }
     };
+
+    submitBtn.addEventListener("click", submitRegistration);
   </script>
 </body>
 

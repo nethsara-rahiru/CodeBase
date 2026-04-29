@@ -54,35 +54,6 @@ const ALLOWED_DOMAINS = ["@std.uwu.ac.lk", "@stu.vau.ac.lk"];
 
 let isAuthProcessing = false;
 
-// Pick up result from redirect if any
-getRedirectResult(auth)
-  .then((result) => {
-    if (result) {
-      window.handleUserAuth(result.user);
-    }
-  })
-  .catch((error) => {
-    console.error("Redirect login failed:", error);
-  });
-
-window.googleLogin = async function () {
-  try {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    if (isMobile) {
-      // Use redirect mode for mobile to ensure compatibility with WebViews
-      await signInWithRedirect(auth, provider);
-    } else {
-      // Stick to popup for desktop
-      const result = await signInWithPopup(auth, provider);
-      await window.handleUserAuth(result.user);
-    }
-  } catch (err) {
-    console.error("Login failed:", err);
-    throw err;
-  }
-};
-
 window.handleUserAuth = async function (user) {
   if (!user || isAuthProcessing) return;
   isAuthProcessing = true;
@@ -205,6 +176,46 @@ window.handleUserAuth = async function (user) {
     isAuthProcessing = false;
   }
 };
+
+window.googleLogin = async function () {
+  try {
+    // Robust mobile detection
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                    (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+    
+    if (isMobile) {
+      // Use redirect mode for mobile to ensure compatibility with WebViews
+      // Note: This causes a page reload. Result is picked up by getRedirectResult.
+      console.log("Mobile detected, using redirect...");
+      await signInWithRedirect(auth, provider);
+    } else {
+      // Stick to popup for desktop
+      const result = await signInWithPopup(auth, provider);
+      if (result.user) {
+        await window.handleUserAuth(result.user);
+      }
+    }
+  } catch (err) {
+    console.error("Login failed:", err);
+    throw err;
+  }
+};
+
+// Pick up result from redirect if any
+getRedirectResult(auth)
+  .then((result) => {
+    if (result && result.user) {
+      console.log("Redirect result found:", result.user.email);
+      window.handleUserAuth(result.user);
+    }
+  })
+  .catch((error) => {
+    console.error("Redirect login failed:", error);
+    // If it's a domain error, warn the user
+    if (error.code === "auth/unauthorized-domain") {
+      alert("This domain is not authorized for Firebase Authentication. Please check your Firebase Console settings.");
+    }
+  });
 
 // ------------------------------------------------------------------------------------------
 // ROLE REDIRECTION
