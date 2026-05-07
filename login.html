@@ -275,12 +275,17 @@
         <h1 class="brand-title">CodeBase</h1>
         <p class="subtitle">Personalized learning hub for university students. Login to continue.</p>
 
-        <button id="googleBtn" class="google-btn">
+        <button id="googleBtn" class="google-btn" onclick="handleGoogleLogin()">
             <img src="assets/img/gLogo.png" alt="Google">
             Continue with Google
         </button>
 
         <div id="loading">Establishing secure connection...</div>
+
+        <div style="margin-top: 24px; font-size: 0.85rem; color: var(--text-muted);">
+            Don't have a university email? <br>
+            <a href="newUserRegistration.html" style="color: var(--accent-primary); text-decoration: none; font-weight: 600;">Request Access Here</a>
+        </div>
 
         <p class="footer">
             Designed for University Students — Non-commercial Project<br>
@@ -292,33 +297,20 @@
     </div>
 
     <script type="module">
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-        import { app, auth } from "./assets/js/firebase.js";
-
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+        import { app, googleLogin, handleUserAuth } from "./assets/js/firebase.js";
+        
+        const auth = getAuth(app);
         const btn = document.getElementById("googleBtn");
         const loading = document.getElementById("loading");
 
         // FAST REDIRECT IF SESSION EXISTS
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                btn.disabled = true;
-                btn.style.opacity = "0.7";
                 loading.style.display = "block";
                 loading.textContent = "Verifying account... Please wait";
                 try {
-                    // window.handleUserAuth is defined in firebase.js
-                    if (typeof window.handleUserAuth === 'function') {
-                        await window.handleUserAuth(user);
-                    } else {
-                        console.warn("handleUserAuth not yet available, waiting...");
-                        // Polling as a fallback if module execution is delayed
-                        const checkAuth = setInterval(async () => {
-                            if (typeof window.handleUserAuth === 'function') {
-                                clearInterval(checkAuth);
-                                await window.handleUserAuth(user);
-                            }
-                        }, 100);
-                    }
+                    await handleUserAuth(user);
                 } catch (error) {
                     console.error("Auth check failed:", error);
                     loading.style.display = "none";
@@ -328,22 +320,14 @@
             }
         });
 
-        const handleGoogleLogin = async function () {
+        window.handleGoogleLogin = async function () {
             btn.disabled = true;
             btn.style.opacity = "0.7";
             loading.style.display = "block";
             loading.textContent = "Establishing secure connection...";
 
             try {
-                // calls window.googleLogin defined in firebase.js
-                if (typeof window.googleLogin === 'function') {
-                    await window.googleLogin();
-                } else {
-                    alert("System is still initializing. Please wait a moment.");
-                    btn.disabled = false;
-                    btn.style.opacity = "1";
-                    loading.style.display = "none";
-                }
+                await googleLogin();
             } catch (error) {
                 console.error("Login error:", error);
                 alert("Authentication failed: " + (error.message || "Please check your connection."));
@@ -352,12 +336,8 @@
                 loading.style.display = "none";
             }
         };
-
-        btn.addEventListener("click", handleGoogleLogin);
     </script>
-
     <script type="module" src="assets/js/firebase.js"></script>
-
 </body>
 
 </html>

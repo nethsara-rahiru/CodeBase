@@ -10,9 +10,6 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import {
   getFirestore,
-  initializeFirestore,
-  persistentLocalCache,
-  persistentMultipleTabManager,
   doc,
   getDoc,
   setDoc,
@@ -21,7 +18,12 @@ import {
   query,
   where,
   serverTimestamp,
-  addDoc
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 // Firebase config
@@ -35,24 +37,20 @@ const firebaseConfig = {
   measurementId: "G-DTPQ1PHCBN"
 };
 
-console.log("Firebase SDK loading...");
-
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-// Initialize Firestore with modern persistence settings
-
 let db;
 try {
+  // Try to initialize with modern persistence settings
   db = initializeFirestore(app, {
     cache: persistentLocalCache({
       tabManager: persistentMultipleTabManager()
     })
   });
-  console.log("Firestore initialized with persistence");
 } catch (e) {
-  console.warn("Firestore persistence failed, falling back to default:", e);
+  console.warn("Firestore persistence failed (likely private mode or WebView), falling back to default:", e);
   db = getFirestore(app);
 }
 
@@ -66,7 +64,48 @@ const ALLOWED_DOMAINS = ["@std.uwu.ac.lk", "@stu.vau.ac.lk"];
 
 let isAuthProcessing = false;
 
-window.handleUserAuth = async function (user) {
+// Pick up result from redirect if any
+getRedirectResult(auth)
+  .then((result) => {
+    if (result) {
+      handleUserAuth(result.user);
+    }
+  })
+  .catch((error) => {
+    console.error("Redirect login failed:", error);
+  });
+
+export const googleLogin = async function () {
+  try {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isLocalDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname.startsWith("192.168.");
+    
+    // On mobile production, use redirect immediately to prevent double account selection.
+    // Popups often fail to communicate back to the main window on mobile browsers.
+    if (isMobile && !isLocalDev) {
+      await signInWithRedirect(auth, provider);
+      return;
+    }
+
+    try {
+      const result = await signInWithPopup(auth, provider);
+      await handleUserAuth(result.user);
+    } catch (popupErr) {
+      console.warn("Popup login failed, attempting redirect...", popupErr);
+      if (popupErr.code === 'auth/popup-blocked' || isMobile) {
+        await signInWithRedirect(auth, provider);
+      } else {
+        throw popupErr;
+      }
+    }
+  } catch (err) {
+    console.error("Login failed:", err);
+    throw err;
+  }
+};
+window.googleLogin = googleLogin;
+
+export const handleUserAuth = async function (user) {
   if (!user || isAuthProcessing) return;
   isAuthProcessing = true;
 
@@ -83,8 +122,9 @@ window.handleUserAuth = async function (user) {
     // ---------------------------
     // FIRESTORE CHECK → targeted queries (Fast & Efficient)
     // ---------------------------
+    const userEmail = user.email.toLowerCase();
     const allowedRef = collection(db, "login_control", "access", "allowedEmails");
-    const allowedQuery = query(allowedRef, where("email", "==", user.email));
+    const allowedQuery = query(allowedRef, where("email", "==", userEmail));
     
     const bannedRef = collection(db, "login_control", "access", "bannedReg");
     const sysRef = doc(db, "system", "settings");
@@ -109,11 +149,12 @@ window.handleUserAuth = async function (user) {
       }));
     }
 
-    const domainAllowed = ALLOWED_DOMAINS.some(d => user.email.endsWith(d));
+    const domainAllowed = ALLOWED_DOMAINS.some(d => user.email.toLowerCase().endsWith(d.toLowerCase()));
     const emailAllowed = !!allowedUser;
 
     if (!domainAllowed && !emailAllowed) {
-      alert("Access denied. Only approved university emails or whitelisted accounts allowed.");
+      console.log("Access Denied for:", user.email, "Domain:", domainAllowed, "Whitelist:", emailAllowed);
+      alert(`Access Denied!\n\nEmail: ${user.email}\nReason: Not a university email AND not found in the whitelist.\n\nPlease register through the "Request Access" link if you haven't already.`);
       await signOut(auth);
       localStorage.clear();
       const path = window.location.pathname.toLowerCase();
@@ -184,74 +225,12 @@ window.handleUserAuth = async function (user) {
     }
   } catch (error) {
     console.error("Auth process error:", error);
+    alert("Verification Error: " + error.message + "\n\nThis might be a permission or connection issue. Please contact support.");
   } finally {
     isAuthProcessing = false;
   }
 };
-
-window.googleLogin = async function () {
-  try {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                    (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
-    
-    console.log("Login start. Mobile:", isMobile);
-
-    // Detect Private/Incognito mode (best effort)
-    try {
-      localStorage.setItem('test', '1');
-      localStorage.removeItem('test');
-    } catch (e) {
-      alert("It seems you are in Private/Incognito mode. This can prevent login on mobile. Please try in a normal tab.");
-      return;
-    }
-
-    // Attempt popup first
-    try {
-      console.log("Popup attempt...");
-      const result = await signInWithPopup(auth, provider);
-      if (result.user) {
-        await window.handleUserAuth(result.user);
-        return;
-      }
-    } catch (popupErr) {
-      console.warn("Popup failed:", popupErr.code);
-      
-      // auth/popup-closed-by-user is common and shouldn't trigger redirect
-      if (popupErr.code === "auth/popup-closed-by-user") {
-        throw new Error("Login cancelled.");
-      }
-
-      // If popup fails/blocked, use redirect
-      console.log("Falling back to redirect...");
-      
-      // Check for HTTPS requirement
-      if (window.location.protocol !== "https:" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-        alert("Mobile login often fails on non-HTTPS connections. If you're testing on a phone, please ensure you use HTTPS.");
-      }
-      
-      await signInWithRedirect(auth, provider);
-    }
-  } catch (err) {
-    console.error("Google Login Error:", err);
-    throw err;
-  }
-};
-
-// Pick up result from redirect if any
-getRedirectResult(auth)
-  .then((result) => {
-    if (result && result.user) {
-      console.log("Redirect result found:", result.user.email);
-      window.handleUserAuth(result.user);
-    }
-  })
-  .catch((error) => {
-    console.error("Redirect login failed:", error);
-    // If it's a domain error, warn the user
-    if (error.code === "auth/unauthorized-domain") {
-      alert("This domain is not authorized for Firebase Authentication. Please check your Firebase Console settings.");
-    }
-  });
+window.handleUserAuth = handleUserAuth;
 
 // ------------------------------------------------------------------------------------------
 // ROLE REDIRECTION
