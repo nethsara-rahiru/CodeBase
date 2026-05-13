@@ -43,20 +43,28 @@ const auth = getAuth(app);
 
 let db;
 try {
-  // Try to initialize with modern persistence settings
-  db = initializeFirestore(app, {
-    cache: persistentLocalCache({
-      tabManager: persistentMultipleTabManager()
-    })
-  });
+  // Mobile browsers can be flaky with multi-tab persistence, so we use a simpler approach for mobile
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  if (isMobile) {
+    db = getFirestore(app);
+    console.log("Firestore initialized in standard mode (Mobile optimization)");
+  } else {
+    db = initializeFirestore(app, {
+      cache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    });
+    console.log("Firestore initialized with multi-tab persistence (Desktop)");
+  }
 } catch (e) {
-  console.warn("Firestore persistence failed (likely private mode or WebView), falling back to default:", e);
+  console.warn("Firestore initialization fallback:", e);
   db = getFirestore(app);
 }
 
 const provider = new GoogleAuthProvider();
 
-const ALLOWED_DOMAINS = ["@std.uwu.ac.lk", "@stu.vau.ac.lk"];
+const ALLOWED_DOMAINS = ["@std.uwu.ac.lk", "@uwu.ac.lk", "@stu.vau.ac.lk", "@vau.ac.lk", "@univ.jfn.ac.lk"];
 
 // ------------------------------------------------------------------------------------------
 // GOOGLE LOGIN
@@ -68,167 +76,185 @@ let isAuthProcessing = false;
 getRedirectResult(auth)
   .then((result) => {
     if (result) {
+      console.log(">>> Redirect result found for:", result.user.email);
       handleUserAuth(result.user);
+    } else {
+      console.log("getRedirectResult returned null (Normal load)");
     }
   })
   .catch((error) => {
-    console.error("Redirect login failed:", error);
+    console.error("getRedirectResult error:", error);
   });
 
 export const googleLogin = async function () {
-  try {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const isLocalDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname.startsWith("192.168.");
-    
-    // On mobile production, use redirect immediately to prevent double account selection.
-    // Popups often fail to communicate back to the main window on mobile browsers.
-    if (isMobile && !isLocalDev) {
-      await signInWithRedirect(auth, provider);
-      return;
-    }
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isLocalDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname.startsWith("192.168.");
+  
+  console.log("Login clicked. Mobile:", isMobile, "LocalDev:", isLocalDev);
 
+  try {
+    // IMPORTANT DEVELOPER NOTE: 
+    // We prefer signInWithPopup even on mobile. 
+    // DO NOT force signInWithRedirect for mobile devices. 
+    // Some mobile browsers (Normal Mode) lose the redirect result due to strict privacy/cookie rules, 
+    // leading to an infinite login loop. Popups are more stable as they maintain the page state.
     try {
+      console.log("Attempting signInWithPopup...");
       const result = await signInWithPopup(auth, provider);
+      console.log("Popup success for:", result.user.email);
       await handleUserAuth(result.user);
     } catch (popupErr) {
-      console.warn("Popup login failed, attempting redirect...", popupErr);
-      if (popupErr.code === 'auth/popup-blocked' || isMobile) {
+      console.warn("signInWithPopup failed or blocked:", popupErr.code);
+      
+      // If it's a mobile device OR the popup was specifically blocked, use Redirect.
+      if (isMobile || popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/cancelled-popup-request') {
+        console.log("Falling back to signInWithRedirect...");
         await signInWithRedirect(auth, provider);
       } else {
         throw popupErr;
       }
     }
   } catch (err) {
-    console.error("Login failed:", err);
-    throw err;
+    console.error("Auth Initiation Error:", err);
+    alert("Login failed to start: " + err.message);
   }
 };
 window.googleLogin = googleLogin;
 
+let authPromise = null;
+
 export const handleUserAuth = async function (user) {
-  if (!user || isAuthProcessing) return;
-  isAuthProcessing = true;
-
-  try {
-    // 1. Quick Local Check for session persistence
-    const userData = {
-      uid: user.uid,
-      name: user.displayName,
-      email: user.email,
-      photo: user.photoURL
-    };
-    localStorage.setItem("user", JSON.stringify(userData));
-
-    // ---------------------------
-    // FIRESTORE CHECK → targeted queries (Fast & Efficient)
-    // ---------------------------
-    const userEmail = user.email.toLowerCase();
-    const allowedRef = collection(db, "login_control", "access", "allowedEmails");
-    const allowedQuery = query(allowedRef, where("email", "==", userEmail));
-    
-    const bannedRef = collection(db, "login_control", "access", "bannedReg");
-    const sysRef = doc(db, "system", "settings");
-    const userRef = doc(db, "users", user.uid);
-
-    // Run independent checks in parallel to save time
-    const [allowedSnap, userSnap, sysSnap] = await Promise.all([
-      getDocs(allowedQuery),
-      getDoc(userRef),
-      getDoc(sysRef)
-    ]);
-
-    const allowedUser = !allowedSnap.empty ? allowedSnap.docs[0].data() : null;
-    const userDocData = userSnap.exists() ? userSnap.data() : null;
-    const sysData = sysSnap.exists() ? sysSnap.data() : { maintenance: false };
-
-    // Update local allowed info
-    if (allowedUser) {
-      localStorage.setItem("allowedUserDetails", JSON.stringify({
-        email: allowedUser.email,
-        regNo: allowedUser.regNo
-      }));
-    }
-
-    const domainAllowed = ALLOWED_DOMAINS.some(d => user.email.toLowerCase().endsWith(d.toLowerCase()));
-    const emailAllowed = !!allowedUser;
-
-    if (!domainAllowed && !emailAllowed) {
-      console.log("Access Denied for:", user.email, "Domain:", domainAllowed, "Whitelist:", emailAllowed);
-      alert(`Access Denied!\n\nEmail: ${user.email}\nReason: Not a university email AND not found in the whitelist.\n\nPlease register through the "Request Access" link if you haven't already.`);
-      await signOut(auth);
-      localStorage.clear();
-      const path = window.location.pathname.toLowerCase();
-      if (!path.includes("login.html") && path !== "/" && !path.endsWith("/") && path.includes(".html")) {
-          window.location.href = "login.html"; 
-      }
-      isAuthProcessing = false;
-      return;
-    }
-
-    if (userDocData) {
-      const regNo = userDocData.registrationNumber;
-      
-      // Targeted check for ban
-      const bannedQuery = query(bannedRef, where("regNo", "==", regNo));
-      const bannedSnap = await getDocs(bannedQuery);
-
-      if (!bannedSnap.empty) {
-        alert("Your account is banned.");
-        await signOut(auth);
-        localStorage.clear();
-        window.location.href = "login.html";
-        isAuthProcessing = false;
-        return;
-      }
-
-      // Check maintenance mode
-      if (sysData.maintenance && (userDocData.role || "student") === "student") {
-        alert("Site is under maintenance. Only staff allowed.");
-        await signOut(auth);
-        localStorage.clear();
-        window.location.href = "login.html";
-        isAuthProcessing = false;
-        return;
-      }
-
-      // ---------------------------------------------------------
-      // Log System Activity (Traffic Tracking)
-      // ---------------------------------------------------------
-      try {
-        await addDoc(collection(db, "activity"), {
-          uid: user.uid,
-          regNo: userDocData.registrationNumber || "N/A",
-          timestamp: serverTimestamp(),
-          type: "login"
-        });
-      } catch (logErr) {
-        console.warn("Failed to log activity:", logErr);
-      }
-      // ---------------------------------------------------------
-
-      // Final redirect if we are on an auth or landing page
-      const path = window.location.pathname.toLowerCase();
-      const isOnAuthPage = path.includes("login.html") || 
-                           path.includes("login-access.html") || 
-                           path === "/" || 
-                           path.endsWith("/") ||
-                           !path.includes(".html"); 
-      
-      if (isOnAuthPage) {
-          redirectByRole(userDocData.role || "student");
-      }
-    } else {
-      // First login → go to register page if not already there
-      if (!window.location.pathname.includes("register.html")) {
-          window.location.href = "register.html";
-      }
-    }
-  } catch (error) {
-    console.error("Auth process error:", error);
-    alert("Verification Error: " + error.message + "\n\nThis might be a permission or connection issue. Please contact support.");
-  } finally {
-    isAuthProcessing = false;
+  if (!user) {
+    console.log("handleUserAuth called with null user");
+    return;
   }
+  
+  if (authPromise) {
+    console.log("Auth verification already in progress for:", user.email, " - awaiting existing process.");
+    return authPromise;
+  }
+  
+  authPromise = (async () => {
+    isAuthProcessing = true;
+    console.log(">>> Starting Auth Verification (New Process) for:", user.email);
+
+    try {
+      const userData = {
+        uid: user.uid,
+        name: user.displayName,
+        email: user.email,
+        photo: user.photoURL
+      };
+      localStorage.setItem("user", JSON.stringify(userData));
+      console.log("User data cached locally.");
+
+      const userEmail = user.email.toLowerCase();
+      const allowedRef = collection(db, "login_control", "access", "allowedEmails");
+      const allowedQuery = query(allowedRef, where("email", "==", userEmail));
+      
+      const bannedRef = collection(db, "login_control", "access", "bannedReg");
+      const sysRef = doc(db, "system", "settings");
+      const userRef = doc(db, "users", user.uid);
+
+      console.log("Fetching Firestore data (allowed, user, system)...");
+      const [allowedSnap, userSnap, sysSnap] = await Promise.all([
+        getDocs(allowedQuery),
+        getDoc(userRef),
+        getDoc(sysRef)
+      ]);
+      console.log("Firestore data fetched successfully.");
+
+      const allowedUser = !allowedSnap.empty ? allowedSnap.docs[0].data() : null;
+      const userDocData = userSnap.exists() ? userSnap.data() : null;
+      const sysData = sysSnap.exists() ? sysSnap.data() : { maintenance: false };
+
+      if (allowedUser) {
+        console.log("User found in whitelist:", allowedUser.regNo);
+        localStorage.setItem("allowedUserDetails", JSON.stringify({
+          email: allowedUser.email,
+          regNo: allowedUser.regNo
+        }));
+      }
+
+      const domainAllowed = ALLOWED_DOMAINS.some(d => user.email.toLowerCase().endsWith(d.toLowerCase()));
+      const emailAllowed = !!allowedUser;
+
+      if (!domainAllowed && !emailAllowed) {
+        console.warn("Access Denied: DomainAllowed:", domainAllowed, "EmailAllowed:", emailAllowed);
+        alert(`Access Denied!\n\nEmail: ${user.email}\nReason: Not a university email AND not found in the whitelist.\n\nPlease register through the "Request Access" link if you haven't already.`);
+        await signOut(auth);
+        localStorage.clear();
+        window.location.href = "login.html";
+        return;
+      }
+
+      console.log("Verification Passed. UserDocExists:", !!userDocData);
+
+      if (userDocData) {
+        const regNo = userDocData.registrationNumber;
+        console.log("User document found. RegNo:", regNo);
+        
+        const bannedQuery = query(bannedRef, where("regNo", "==", regNo));
+        const bannedSnap = await getDocs(bannedQuery);
+
+        if (!bannedSnap.empty) {
+          console.warn("User is banned.");
+          alert("Your account is banned.");
+          await signOut(auth);
+          localStorage.clear();
+          window.location.href = "login.html";
+          return;
+        }
+
+        if (sysData.maintenance && (userDocData.role || "student") === "student") {
+          console.warn("System maintenance mode active.");
+          alert("Site is under maintenance. Only staff allowed.");
+          await signOut(auth);
+          localStorage.clear();
+          window.location.href = "login.html";
+          return;
+        }
+
+        try {
+          await addDoc(collection(db, "activity"), {
+            uid: user.uid,
+            regNo: userDocData.registrationNumber || "N/A",
+            timestamp: serverTimestamp(),
+            type: "login"
+          });
+        } catch (logErr) {
+          console.warn("Failed to log activity:", logErr);
+        }
+
+        const path = window.location.pathname.toLowerCase();
+        const isOnAuthPage = path.includes("login.html") || 
+                             path.includes("login-access.html") || 
+                             path === "/" || 
+                             path.endsWith("/") ||
+                             !path.includes(".html"); 
+        
+        console.log("Redirection check - Path:", path, "IsOnAuthPage:", isOnAuthPage);
+        if (isOnAuthPage) {
+            console.log("Redirecting to dashboard...");
+            redirectByRole(userDocData.role || "student");
+        }
+      } else {
+        console.log("New user detected. Redirecting to registration...");
+        if (!window.location.pathname.includes("register.html")) {
+            window.location.href = "register.html";
+        }
+      }
+    } catch (error) {
+      console.error("Critical Auth Verification Error:", error);
+      alert("Verification Error: " + error.message + "\n\nThis might be a permission or connection issue. Please contact support.");
+    } finally {
+      isAuthProcessing = false;
+      authPromise = null;
+      console.log("<<< Auth Verification Finished.");
+    }
+  })();
+  
+  return authPromise;
 };
 window.handleUserAuth = handleUserAuth;
 
