@@ -1629,6 +1629,7 @@
               style="display: flex; justify-content: space-between; margin-left: 23px;"></div>
             <output id="forecastChartReadout" aria-live="polite"
               style="display: block; margin: 10px 0; padding: 10px 12px; border: 1px solid rgba(148,163,184,.3); border-radius: 8px; font-variant-numeric: tabular-nums;"></output>
+            <p id="forecastHonoursChartStatus" style="margin: 8px 0;"></p>
             <details>
               <summary>Chart data</summary>
               <div class="results-table-wrap">
@@ -2014,6 +2015,24 @@
     });
     forecastCanvas.addEventListener("click", inspectChartPointer);
 
+    const honoursCutoff = "32";
+    const honoursTarget = 3;
+    const honoursChartStatus = document.getElementById("forecastHonoursChartStatus");
+
+    function getYearFourChartCourses(courses) {
+      // IT Honours curriculum, Faculty of Applied Science handbook, section 3.4.
+      const handbookCodes = ["IT4113", "IT4123", "IT4133", "IT4142", "IT4153", "IT4216"];
+      const fallback = handbookCodes.filter(code => !courses.has(code))
+        .map(code => getForecastCourse(code, ""));
+      const electiveCredits = [...courses.values()]
+        .filter(course => course.semester === "41" && course.elective)
+        .reduce((credits, course) => credits + course.credits, 0);
+      if (electiveCredits < 10) {
+        fallback.push({ code: "handbook-elective-credits", semester: "41", credits: 10 - electiveCredits });
+      }
+      return fallback;
+    }
+
     function getSemesterGpaData(courses, completed) {
       let completedCredits = 0;
       let completedPoints = 0;
@@ -2043,6 +2062,39 @@
           minimum: hasProjection ? (completedPoints + remainingCredits * window.GRADE_POINTS.C) / totalCredits : null,
           maximum: hasProjection ? (completedPoints + remainingCredits * window.GRADE_POINTS.A) / totalCredits : null,
           completedCredits, completedPoints, remainingCredits
+        };
+      });
+    }
+
+    function getHonoursChart(courses, completed, semesterData) {
+      const cutoff = semesterData.find(point => point.term === honoursCutoff);
+      const cutoffCredits = cutoff.completedCredits + cutoff.remainingCredits;
+      const best = cutoffCredits
+        ? (cutoff.completedPoints + cutoff.remainingCredits * window.GRADE_POINTS.A) / cutoffCredits
+        : null;
+      if (best === null || best + 1e-8 < honoursTarget) {
+        honoursChartStatus.textContent = best === null
+          ? "No course data is available to assess the 3.2 Honours target."
+          : `Year 4 forecast unavailable. With the available courses, the highest projected OGPA at 3.2 is ${best.toFixed(2)}, below the 3.00 Honours target.`;
+        return semesterData.map(point => point.term > honoursCutoff ? { ...point, minimum: null, maximum: null } : point);
+      }
+
+      const fallback = getYearFourChartCourses(courses);
+      const minimumEntryPoints = Math.max(
+        honoursTarget * cutoffCredits,
+        cutoff.completedPoints + cutoff.remainingCredits * window.GRADE_POINTS.C
+      );
+      const minimumEntryOgpa = minimumEntryPoints / cutoffCredits;
+      honoursChartStatus.textContent = "Year 4 projections assume the 3.00 Honours OGPA target is met by 3.2. The lower line uses Cs for ungraded Year 4 courses."
+        + (fallback.length ? " Missing Year 4 credits are estimated from the faculty handbook." : "");
+      return getSemesterGpaData([...courses.values(), ...fallback], completed).map(point => {
+        if (point.term <= honoursCutoff || point.minimum === null) return point;
+        const denominator = point.completedCredits + point.remainingCredits;
+        const extraEntryPoints = minimumEntryPoints - (cutoff.completedPoints + cutoff.remainingCredits * window.GRADE_POINTS.C);
+        return {
+          ...point,
+          minimum: point.minimum + extraEntryPoints / denominator,
+          yearFourAnchor: point.term === "41" ? minimumEntryOgpa : null
         };
       });
     }
@@ -2100,7 +2152,7 @@
       minimum.forEach((value, index) => {
         if (index === 0 || value === null || minimum[index - 1] === null) return;
         ctx.beginPath();
-        ctx.moveTo(x(index - 1), y(minimum[index - 1]));
+        ctx.moveTo(x(index - 1), y(data[index].yearFourAnchor ?? minimum[index - 1]));
         ctx.lineTo(x(index), y(value));
         ctx.lineTo(x(index), y(maximum[index]));
         ctx.lineTo(x(index - 1), y(maximum[index - 1]));
@@ -2126,7 +2178,12 @@
         values.forEach((value, index) => {
           if (value === null) return;
           if (index === 0 || values[index - 1] === null) ctx.moveTo(x(index), y(value));
-          else ctx.lineTo(x(index), y(value));
+          else {
+            if (key === "minimum" && data[index].yearFourAnchor != null) {
+              ctx.moveTo(x(index - 1), y(data[index].yearFourAnchor));
+            }
+            ctx.lineTo(x(index), y(value));
+          }
         });
         ctx.stroke();
         ctx.setLineDash([]);
@@ -2203,7 +2260,7 @@
         .sort((a, b) => a.semester.localeCompare(b.semester) || a.code.localeCompare(b.code));
       const upcoming = throughSemester.filter(course => !completed.has(course.code));
       const semesterData = getSemesterGpaData([...courses.values()], completed);
-      renderSemesterGpaChart(semesterData);
+      renderSemesterGpaChart(getHonoursChart(courses, completed, semesterData));
       const { completedCredits, completedPoints, remainingCredits } = semesterData.find(point => point.term === semester);
       const totalCredits = completedCredits + remainingCredits;
       const project = grade => (completedPoints + remainingCredits * window.GRADE_POINTS[grade]) / totalCredits;
