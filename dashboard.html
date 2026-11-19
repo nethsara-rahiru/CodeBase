@@ -1591,6 +1591,36 @@
           <p style="font-size: 1.1rem; opacity: 0.9; font-weight: 500;" id="gpaStatus">Start adding your results!</p>
         </div>
 
+        <section class="org-section" aria-labelledby="gpaForecastHeading">
+          <h3 id="gpaForecastHeading" style="font-size: 1.25rem; font-weight: 700;">OGPA forecast</h3>
+          <p style="margin: 8px 0 16px;">Add your completed grades in the Academic Results Ledger below. Enter only remaining credits that count toward OGPA, including courses awaiting grades.</p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 12px;">
+            <label>Remaining credits through Year 3, Semester 2
+              <input id="forecastCutoffCredits" class="grade-select" style="width: 100%;" type="number" min="0" step="1" placeholder="Enter 0 if complete">
+            </label>
+            <label>Total remaining credits through graduation
+              <input id="forecastDegreeCredits" class="grade-select" style="width: 100%;" type="number" min="0" step="1" placeholder="Include any remaining Year 4 credits">
+            </label>
+            <label>Try a grade for all remaining credits
+              <select id="forecastGrade" class="grade-select" style="width: 100%;"></select>
+            </label>
+          </div>
+          <div class="results-table-wrap">
+            <table class="results-table">
+              <thead><tr><th scope="col">Target</th><th scope="col">OGPA</th><th scope="col">Required results</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">IT Honours entry (end of 3.2)</th><td>3.00</td><td id="forecastHonours" aria-live="polite"></td></tr>
+                <tr><th scope="row">Second Class Lower</th><td>3.00</td><td id="forecastLower" aria-live="polite"></td></tr>
+                <tr><th scope="row">Second Class Upper</th><td>3.30</td><td id="forecastUpper" aria-live="polite"></td></tr>
+                <tr><th scope="row">First Class</th><td>3.70</td><td id="forecastFirst" aria-live="polite"></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p style="margin-top: 12px;">These estimates cover the OGPA requirement. The 3.2 entry cutoff is for IT. The faculty also considers programme-specific entry and award requirements.
+            <a href="https://fas.vau.ac.lk/wp-content/uploads/2026/01/FAS-Handbook-2022-2023.pdf" target="_blank" rel="noopener">Faculty handbook</a>
+          </p>
+        </section>
+
         <!-- Timetable Section
         <section class="org-section" id="timetableSection" style="margin-top: 24px; display: none;">
           <h3 style="font-size: 1.25rem; font-weight: 700;">Live Batch Timetable</h3>
@@ -1875,6 +1905,89 @@
       addResultRow(code.toUpperCase().trim(), "", name.trim());
     };
 
+    const nonOgpaTrainingCodes = new Set(["CSH4226", "IT4226"]);
+    const forecastGradeSelect = document.getElementById("forecastGrade");
+    const forecastGrades = Object.entries(window.GRADE_POINTS).filter(([grade]) => grade !== "A+" && grade !== "F");
+    forecastGradeSelect.add(new Option("Choose a grade", ""));
+    forecastGrades.forEach(([grade]) => forecastGradeSelect.add(new Option(grade, grade)));
+
+    function getForecastMessage(completed, remaining, target, scenarioGrade) {
+      if (remaining === null) return "Enter remaining credits to calculate.";
+
+      const credits = completed.credits + remaining;
+      if (credits === 0) return "Add grades or remaining credits to calculate.";
+
+      const pointsNeeded = target * credits - completed.points;
+      if (remaining === 0) {
+        const ogpa = completed.points / credits;
+        return `OGPA ${ogpa.toFixed(2)}. ${pointsNeeded <= 1e-8 ? "Meets the OGPA target." : "Below the OGPA target."}`;
+      }
+
+      const required = pointsNeeded / remaining;
+      const best = (completed.points + remaining * 4) / credits;
+      let message;
+      if (required <= 1e-8) {
+        message = "OGPA target secured across these credits.";
+      } else if (required > 4 + 1e-8) {
+        message = `Out of reach. Best possible OGPA: ${best.toFixed(2)}.`;
+      } else {
+        const minimum = (Math.ceil((required - 1e-10) * 100) / 100).toFixed(2);
+        const [grade] = forecastGrades.slice().reverse().find(([, points]) => points + 1e-8 >= required);
+        message = `Average needed: ${minimum}. Example: ${grade} in every remaining course.`;
+      }
+
+      if (scenarioGrade) {
+        const projected = (completed.points + remaining * window.GRADE_POINTS[scenarioGrade]) / credits;
+        message += ` With ${scenarioGrade}: ${projected.toFixed(2)} OGPA (${projected + 1e-8 >= target ? "meets target" : "below target"}).`;
+      }
+      return message;
+    }
+
+    function renderGpaForecast(rows) {
+      const throughCutoff = { credits: 0, points: 0 };
+      const throughGraduation = { credits: 0, points: 0 };
+      const seenCodes = new Set();
+
+      rows.forEach(row => {
+        const code = (row.dataset.code || "").trim().toUpperCase();
+        const match = code.match(/^[A-Z]+([1-4])([12])\d([1-9])$/);
+        const grade = row.querySelector(".grade-select")?.value;
+        const points = window.GRADE_POINTS[grade];
+        if (!match || code.startsWith("ACU") || nonOgpaTrainingCodes.has(code) ||
+          points === undefined || seenCodes.has(code)) return;
+
+        seenCodes.add(code);
+        const credits = Number(match[3]);
+        throughGraduation.credits += credits;
+        throughGraduation.points += credits * points;
+        if (Number(match[1]) <= 3) {
+          throughCutoff.credits += credits;
+          throughCutoff.points += credits * points;
+        }
+      });
+
+      const readCredits = id => {
+        const input = document.getElementById(id);
+        return input.value !== "" && input.validity.valid ? input.valueAsNumber : null;
+      };
+      const cutoffCredits = readCredits("forecastCutoffCredits");
+      const degreeCredits = readCredits("forecastDegreeCredits");
+      const targets = [
+        ["forecastHonours", throughCutoff, cutoffCredits, 3],
+        ["forecastLower", throughGraduation, degreeCredits, 3],
+        ["forecastUpper", throughGraduation, degreeCredits, 3.3],
+        ["forecastFirst", throughGraduation, degreeCredits, 3.7]
+      ];
+
+      targets.forEach(([id, completed, remaining, target]) => {
+        document.getElementById(id).textContent = getForecastMessage(completed, remaining, target, forecastGradeSelect.value);
+      });
+    }
+
+    ["forecastCutoffCredits", "forecastDegreeCredits", "forecastGrade"].forEach(id => {
+      document.getElementById(id).addEventListener("input", () => window.calculateGPA());
+    });
+
     window.calculateGPA = () => {
       const rows = document.querySelectorAll("#resultsTableBody tr");
       let totalWeightedPoints = 0;
@@ -1917,6 +2030,7 @@
         else status.textContent = "Keep working hard! 💪";
       }
 
+      renderGpaForecast(rows);
       return gpaValue;
     };
 
