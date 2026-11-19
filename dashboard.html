@@ -566,19 +566,6 @@
       color: white;
     }
 
-    #gpaSection .gpa-display-card {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      flex-wrap: wrap;
-      padding: 14px 20px;
-      margin: 0;
-      text-align: left;
-      border-radius: 14px;
-      box-shadow: none;
-    }
-
-    #gpaSection .gpa-val { margin: 0; font-size: 2rem; }
     #gpaStatus { font-size: .85rem; }
     #gpaSection .forecast-panel { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
     .forecast-panel h3, .forecast-panel h4 { margin: 0 0 8px; }
@@ -1647,7 +1634,7 @@
     <div id="gpaSection" style="display:none;">
       <div class="profile-tab-layout">
         <div class="gpa-display-card">
-          <span>Current GPA</span>
+          <span class="label" style="font-weight: 600;">Current OGPA</span>
           <div class="gpa-val" id="gpaScore">0.00</div>
           <p id="gpaStatus">Add grades to get started.</p>
         </div>
