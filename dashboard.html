@@ -566,6 +566,70 @@
       color: white;
     }
 
+    #gpaSection .gpa-display-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      padding: 14px 20px;
+      margin: 0;
+      text-align: left;
+      border-radius: 14px;
+      box-shadow: none;
+    }
+
+    #gpaSection .gpa-val { margin: 0; font-size: 2rem; }
+    #gpaStatus { font-size: .85rem; }
+    #gpaSection .forecast-panel { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .forecast-panel h3, .forecast-panel h4 { margin: 0 0 8px; }
+    .forecast-chart {
+      margin: 0;
+      padding: 14px;
+      border: 1px solid var(--glass-border);
+      border-radius: 14px;
+      background: rgba(15, 23, 42, .55);
+    }
+    .forecast-chart figcaption { font-weight: 700; margin-bottom: 8px; }
+    .forecast-legend {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      color: var(--text-muted);
+      font-size: .8rem;
+    }
+    .forecast-chart canvas { display: block; width: 100%; height: clamp(180px, 33vw, 260px); cursor: crosshair; }
+    .forecast-axis { display: flex; justify-content: space-between; margin-left: 23px; }
+    .forecast-metrics, .forecast-fields {
+      display: grid;
+      gap: 8px;
+      margin: 8px 0;
+    }
+    .forecast-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .forecast-readout { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .forecast-fields { grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); }
+    .forecast-metric { padding: 8px 10px; border-radius: 8px; background: rgba(148, 163, 184, .09); }
+    .forecast-metric span, .forecast-fields label, .forecast-note { color: var(--text-muted); font-size: .8rem; }
+    .forecast-metric strong { display: block; margin-top: 3px; font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+    .forecast-note { margin: 8px 0; }
+    .forecast-note:empty { display: none; }
+    .forecast-fields .grade-select { margin-top: 5px; min-height: 40px; color-scheme: dark; }
+    .forecast-panel details { font-size: .85rem; }
+    .forecast-panel summary { cursor: pointer; padding: 6px 0; }
+    .forecast-panel details > p { margin: 6px 0; color: var(--text-muted); }
+    .forecast-panel :is(button, input, select, summary, a):focus-visible { outline: 2px solid #a5b4fc; outline-offset: 2px; }
+    #forecastAdvice { font-size: .9rem; margin: 8px 0 0; }
+    #forecastCoverage, .forecast-min { color: #fbbf24; }
+    .forecast-max { color: #6ee7b7; }
+
+    @media (max-width: 600px) {
+      .forecast-chart { padding: 10px; }
+      .forecast-fields, .forecast-readout { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .forecast-fields label:first-child { grid-column: 1 / -1; }
+    }
+
     /* Organization Section */
     .org-section {
       display: flex;
@@ -1582,56 +1646,36 @@
     <!-- TAB 2.5: MY GPA -->
     <div id="gpaSection" style="display:none;">
       <div class="profile-tab-layout">
-        <!-- GPA Box (Top) -->
         <div class="gpa-display-card">
-          <span class="label"
-            style="text-transform: uppercase; font-size: 1rem; font-weight: 600; opacity: 0.9; letter-spacing: 0.1em;">Academic
-            Standing — GPA</span>
+          <span>Current GPA</span>
           <div class="gpa-val" id="gpaScore">0.00</div>
-          <p style="font-size: 1.1rem; opacity: 0.9; font-weight: 500;" id="gpaStatus">Start adding your results!</p>
+          <p id="gpaStatus">Add grades to get started.</p>
         </div>
 
-        <section class="org-section" aria-labelledby="gpaForecastHeading">
-          <h3 id="gpaForecastHeading" style="font-size: 1.25rem; font-weight: 700;">Semester OGPA forecast</h3>
-          <p style="margin: 8px 0 16px;">The forecast uses grades already in your ledger and assumes a C for each ungraded IT course through the selected semester. Untick any elective you do not plan to take.</p>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 12px;">
-            <label>Forecast through semester
-              <select id="forecastSemester" class="grade-select" style="width: 100%;">
-                <option value="">Loading semesters…</option>
-              </select>
-            </label>
-            <label>Target OGPA
-              <input id="forecastTarget" class="grade-select" style="width: 100%;" type="number" min="0" max="4" step="0.01" value="3.00">
-            </label>
-          </div>
-          <p style="margin-top: 12px;">
-            <button type="button" class="add-res-btn" data-forecast-semester="32" data-forecast-target="3.00">IT Honours entry (3.00)</button>
-            <button type="button" class="add-res-btn" data-forecast-semester="42" data-forecast-target="3.00">Second Class Lower (3.00)</button>
-            <button type="button" class="add-res-btn" data-forecast-semester="42" data-forecast-target="3.30">Second Class Upper (3.30)</button>
-            <button type="button" class="add-res-btn" data-forecast-semester="42" data-forecast-target="3.70">First Class (3.70)</button>
-          </p>
-          <div style="margin: 12px 0;" aria-live="polite">
-            <p id="forecastProjection">Loading courses…</p>
-            <p id="forecastAdvice"></p>
-            <p id="forecastCoverage"></p>
-          </div>
-          <figure id="forecastChart" hidden style="margin: 16px 0;">
-            <figcaption style="font-weight: 700; margin-bottom: 10px;">GPA and OGPA through semester 4.2</figcaption>
-            <ul aria-label="Chart legend" style="list-style: none; padding: 0; margin: 0 0 8px; display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: .85rem;">
+        <section class="org-section forecast-panel" aria-labelledby="gpaForecastHeading">
+          <h3 id="gpaForecastHeading">OGPA forecast</h3>
+          <figure id="forecastChart" class="forecast-chart" hidden>
+            <figcaption>GPA by semester</figcaption>
+            <ul class="forecast-legend" aria-label="Chart legend">
               <li><span aria-hidden="true" style="color: #7dd3fc;">━</span> Semester GPA</li>
               <li><span aria-hidden="true" style="color: #c4b5fd;">━</span> Recorded OGPA</li>
-              <li><span aria-hidden="true" style="color: #fbbf24;">┄</span> Minimum OGPA (Cs)</li>
-              <li><span aria-hidden="true" style="color: #6ee7b7;">┄</span> Maximum OGPA (As)</li>
+              <li><span aria-hidden="true" class="forecast-min">┄</span> All Cs</li>
+              <li><span aria-hidden="true" class="forecast-max">┄</span> All As</li>
             </ul>
-            <canvas id="forecastChartCanvas" role="img" aria-label="GPA from 0 to 4 by semester. Select a semester below to read its values."
-              style="display: block; width: 100%; height: 260px; cursor: crosshair;"></canvas>
-            <div id="forecastChartSemesters" role="group" aria-label="Semester on the horizontal axis"
-              style="display: flex; justify-content: space-between; margin-left: 23px;"></div>
-            <output id="forecastChartReadout" aria-live="polite"
-              style="display: block; margin: 10px 0; padding: 10px 12px; border: 1px solid rgba(148,163,184,.3); border-radius: 8px; font-variant-numeric: tabular-nums;"></output>
-            <p id="forecastHonoursChartStatus" style="margin: 8px 0;"></p>
+            <canvas id="forecastChartCanvas" role="img" aria-label="GPA from 0 to 4 by semester. Select a semester below to read its values."></canvas>
+            <div id="forecastChartSemesters" class="forecast-axis" role="group" aria-label="Chart semesters"></div>
+            <div id="forecastChartReadout" aria-live="polite">
+              <p id="forecastReadoutSemester" class="forecast-note"></p>
+              <div class="forecast-metrics forecast-readout">
+                <div class="forecast-metric"><span>Semester GPA</span><strong id="forecastReadoutGpa" style="color: #7dd3fc;">—</strong></div>
+                <div class="forecast-metric"><span>Recorded OGPA</span><strong id="forecastReadoutOgpa" style="color: #c4b5fd;">—</strong></div>
+                <div class="forecast-metric"><span>Min · Cs</span><strong id="forecastReadoutMin" class="forecast-min">—</strong></div>
+                <div class="forecast-metric"><span>Max · As</span><strong id="forecastReadoutMax" class="forecast-max">—</strong></div>
+              </div>
+            </div>
+            <p id="forecastHonoursChartStatus" class="forecast-note"></p>
             <details>
-              <summary>Chart data</summary>
+              <summary>View chart data</summary>
               <div class="results-table-wrap">
                 <table class="results-table">
                   <thead><tr><th scope="col">Semester</th><th scope="col">Semester GPA</th><th scope="col">Recorded OGPA</th><th scope="col">Minimum OGPA (Cs)</th><th scope="col">Maximum OGPA (As)</th></tr></thead>
@@ -1640,6 +1684,34 @@
               </div>
             </details>
           </figure>
+
+          <div>
+            <h4>Plan a target</h4>
+            <div class="forecast-fields">
+              <label>Goal
+                <select id="forecastPreset" class="grade-select">
+                  <option value="">Custom target</option>
+                  <option value="32|3.00">IT Honours entry</option>
+                  <option value="42|3.00">Second Class Lower</option>
+                  <option value="42|3.30">Second Class Upper</option>
+                  <option value="42|3.70">First Class</option>
+                </select>
+              </label>
+              <label>Through semester
+                <select id="forecastSemester" class="grade-select"><option value="">Loading…</option></select>
+              </label>
+              <label>Target OGPA
+                <input id="forecastTarget" class="grade-select" type="number" min="0" max="4" step="0.01" value="3.00">
+              </label>
+            </div>
+            <div class="forecast-metrics" aria-live="polite">
+              <div class="forecast-metric"><span>Minimum · all Cs</span><strong id="forecastProjectionMin" class="forecast-min">—</strong></div>
+              <div class="forecast-metric"><span>Maximum · all As</span><strong id="forecastProjectionMax" class="forecast-max">—</strong></div>
+            </div>
+            <p id="forecastAdvice" role="status">Loading courses…</p>
+            <p id="forecastCoverage" class="forecast-note"></p>
+          </div>
+
           <details id="forecastCourses" hidden>
             <summary id="forecastCoursesSummary">Courses included in the forecast</summary>
             <div class="results-table-wrap">
@@ -1649,9 +1721,11 @@
               </table>
             </div>
           </details>
-          <p style="margin-top: 12px;">Forecasts apply to OGPA. Honours entry and class awards have other faculty requirements.
-            <a href="https://fas.vau.ac.lk/wp-content/uploads/2026/01/FAS-Handbook-2022-2023.pdf" target="_blank" rel="noopener">Faculty handbook</a>
-          </p>
+          <details>
+            <summary>How the forecast works</summary>
+            <p>Projections keep recorded grades fixed and weight courses by credit. For your target, the plan shows the lowest grade that works when earned in every included ungraded course. You can exclude electives under Ungraded courses.</p>
+            <p>Year 4 assumes the 3.00 Honours OGPA target is met by 3.2. Missing Year 4 credits may be estimated from the handbook. Entry and class awards have additional requirements. <a href="https://fas.vau.ac.lk/wp-content/uploads/2026/01/FAS-Handbook-2022-2023.pdf" target="_blank" rel="noopener">Faculty handbook</a></p>
+          </details>
         </section>
 
         <!-- Timetable Section
@@ -1965,7 +2039,8 @@
     const forecastChartLeft = 39;
     const forecastChartRight = 16;
     const forecastChartLabels = document.getElementById("forecastChartSemesters");
-    const forecastChartReadout = document.getElementById("forecastChartReadout");
+    const forecastReadoutSemester = document.getElementById("forecastReadoutSemester");
+    const forecastReadoutValues = ["Gpa", "Ogpa", "Min", "Max"].map(key => document.getElementById(`forecastReadout${key}`));
     const formatChartTerm = term => term.split("").join(".");
     const formatChartValue = value => value === null ? "—" : value.toFixed(2);
 
@@ -1997,10 +2072,10 @@
         button.style.borderColor = selected ? "#818cf8" : "transparent";
         button.style.background = selected ? "rgba(129,140,248,.18)" : "none";
       });
-      const values = point.gpa === null && point.minimum === null
-        ? "No recorded GPA or projection available."
-        : `Semester GPA ${formatChartValue(point.gpa)} · Recorded OGPA ${formatChartValue(point.ogpa)} · Min (Cs) ${formatChartValue(point.minimum)} · Max (As) ${formatChartValue(point.maximum)}`;
-      forecastChartReadout.textContent = `Semester ${formatChartTerm(point.term)} · ${values}`;
+      forecastReadoutSemester.textContent = `Semester ${formatChartTerm(point.term)}`;
+      [point.gpa, point.ogpa, point.minimum, point.maximum].forEach((value, index) => {
+        forecastReadoutValues[index].textContent = formatChartValue(value);
+      });
     }
 
     function inspectChartPointer(event) {
@@ -2085,8 +2160,8 @@
         cutoff.completedPoints + cutoff.remainingCredits * window.GRADE_POINTS.C
       );
       const minimumEntryOgpa = minimumEntryPoints / cutoffCredits;
-      honoursChartStatus.textContent = "Year 4 projections assume the 3.00 Honours OGPA target is met by 3.2. The lower line uses Cs for ungraded Year 4 courses."
-        + (fallback.length ? " Missing Year 4 credits are estimated from the faculty handbook." : "");
+      honoursChartStatus.textContent = "Year 4 assumes 3.00 at 3.2."
+        + (fallback.length ? " Includes handbook credit estimates." : "");
       return getSemesterGpaData([...courses.values(), ...fallback], completed).map(point => {
         if (point.term <= honoursCutoff || point.minimum === null) return point;
         const denominator = point.completedCredits + point.remainingCredits;
@@ -2270,30 +2345,28 @@
         ? forecastGrades.find(grade => project(grade) + 1e-8 >= target)
         : null;
 
-      const projection = document.getElementById("forecastProjection");
       const advice = document.getElementById("forecastAdvice");
       const coverage = document.getElementById("forecastCoverage");
-      projection.textContent = totalCredits
-        ? `Projected OGPA at ${semester[0]}.${semester[1]}: minimum ${project("C").toFixed(2)} (all Cs), maximum ${project("A").toFixed(2)} (all As). Based on ${completedCredits} graded credits and ${remainingCredits} ungraded credits.`
-        : "No graded or upcoming IT credits are available for this forecast.";
+      document.getElementById("forecastProjectionMin").textContent = totalCredits ? project("C").toFixed(2) : "—";
+      document.getElementById("forecastProjectionMax").textContent = totalCredits ? project("A").toFixed(2) : "—";
       if (!totalCredits) {
-        advice.textContent = "";
+        advice.textContent = "No courses available for this forecast.";
       } else if (!validTarget) {
-        advice.textContent = "Enter a target OGPA from 0.00 to 4.00.";
+        advice.textContent = "Enter an OGPA between 0.00 and 4.00.";
       } else if (plan) {
-        advice.textContent = `Minimum same-grade plan for ${target.toFixed(2)}: ${plan} in every included ungraded course, for a projected ${project(plan).toFixed(2)} OGPA. Different grades can also meet the target if their credit-weighted average reaches it.`;
+        advice.textContent = `${plan} in each ungraded course → ${project(plan).toFixed(2)} OGPA`;
       } else if (!remainingCredits) {
         advice.textContent = project("C") + 1e-8 >= target
-          ? "The recorded grades meet this OGPA target."
-          : "The recorded grades are below this target, with no ungraded credits in the forecast.";
+          ? "Target met with recorded grades."
+          : "Below target. No ungraded courses left.";
       } else {
-        advice.textContent = `Target out of reach with these courses. Straight As would give ${project("A").toFixed(2)} OGPA.`;
+        advice.textContent = "Target out of reach, even with all As.";
       }
 
       const availableSemesters = new Set(throughSemester.map(course => course.semester));
       const missingSemesters = forecastSemesters.filter(term => term <= semester && !availableSemesters.has(term));
       coverage.textContent = missingSemesters.length
-        ? `Course data is missing for ${missingSemesters.map(term => term.split("").join(".")).join(", ")}. The forecast uses the available courses only.`
+        ? `Missing course data for ${missingSemesters.map(term => term.split("").join(".")).join(", ")}.`
         : "";
 
       const details = document.getElementById("forecastCourses");
@@ -2330,15 +2403,21 @@
       }));
     }
 
-    forecastSemester.addEventListener("change", () => window.calculateGPA());
-    forecastTarget.addEventListener("input", () => window.calculateGPA());
-    document.querySelectorAll("[data-forecast-target]").forEach(button => {
-      button.addEventListener("click", () => {
-        if (!allCoursesSnap) return;
-        forecastSemester.value = button.dataset.forecastSemester;
-        forecastTarget.value = button.dataset.forecastTarget;
-        window.calculateGPA();
-      });
+    const forecastPreset = document.getElementById("forecastPreset");
+    function updateCustomForecast() {
+      const [term, target] = forecastPreset.value.split("|");
+      if (term !== forecastSemester.value || Number(target) !== forecastTarget.valueAsNumber) {
+        forecastPreset.value = "";
+      }
+      window.calculateGPA();
+    }
+
+    forecastSemester.addEventListener("change", updateCustomForecast);
+    forecastTarget.addEventListener("input", updateCustomForecast);
+    forecastPreset.addEventListener("change", () => {
+      if (!allCoursesSnap || !forecastPreset.value) return;
+      [forecastSemester.value, forecastTarget.value] = forecastPreset.value.split("|");
+      window.calculateGPA();
     });
 
     window.calculateGPA = () => {
@@ -2377,7 +2456,7 @@
 
       const status = document.getElementById("gpaStatus");
       if (status) {
-        if (totalCredits === 0) status.textContent = "Select your grades to calculate!";
+        if (totalCredits === 0) status.textContent = "Add grades to get started.";
         else if (gpaValue >= 3.7) status.textContent = "Dean's List potential! 🌟";
         else if (gpaValue >= 3.0) status.textContent = "Great job! Keep it up! 👏";
         else status.textContent = "Keep working hard! 💪";
