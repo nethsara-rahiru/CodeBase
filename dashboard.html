@@ -1993,7 +1993,7 @@
       const advice = document.getElementById("forecastAdvice");
       const coverage = document.getElementById("forecastCoverage");
       projection.textContent = totalCredits
-        ? `Projected OGPA at ${semester[0]}.${semester[1]}: ${project("C").toFixed(2)} (${completedCredits} graded credits, ${remainingCredits} credits assumed at C).`
+        ? `Projected OGPA at ${semester[0]}.${semester[1]}: minimum ${project("C").toFixed(2)} (all Cs), maximum ${project("A").toFixed(2)} (all As). Based on ${completedCredits} graded credits and ${remainingCredits} ungraded credits.`
         : "No graded or upcoming IT credits are available for this forecast.";
       if (!totalCredits) {
         advice.textContent = "";
