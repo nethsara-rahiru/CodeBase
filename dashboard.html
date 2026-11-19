@@ -1616,15 +1616,19 @@
             <p id="forecastCoverage"></p>
           </div>
           <figure id="forecastChart" hidden style="margin: 16px 0;">
-            <figcaption style="font-weight: 700; margin-bottom: 10px;">GPA and OGPA by semester</figcaption>
+            <figcaption style="font-weight: 700; margin-bottom: 10px;">GPA and OGPA through semester 4.2</figcaption>
             <ul aria-label="Chart legend" style="list-style: none; padding: 0; margin: 0 0 8px; display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: .85rem;">
               <li><span aria-hidden="true" style="color: #7dd3fc;">━</span> Semester GPA</li>
               <li><span aria-hidden="true" style="color: #c4b5fd;">━</span> Recorded OGPA</li>
               <li><span aria-hidden="true" style="color: #fbbf24;">┄</span> Minimum OGPA (Cs)</li>
               <li><span aria-hidden="true" style="color: #6ee7b7;">┄</span> Maximum OGPA (As)</li>
             </ul>
-            <canvas id="forecastChartCanvas" role="img" aria-label="Semester on the horizontal axis and GPA from 0 to 4 on the vertical axis. Exact values are in the chart data table."
-              style="display: block; width: 100%; height: 260px;"></canvas>
+            <canvas id="forecastChartCanvas" role="img" aria-label="GPA from 0 to 4 by semester. Select a semester below to read its values."
+              style="display: block; width: 100%; height: 260px; cursor: crosshair;"></canvas>
+            <div id="forecastChartSemesters" role="group" aria-label="Semester on the horizontal axis"
+              style="display: flex; justify-content: space-between; margin-left: 23px;"></div>
+            <output id="forecastChartReadout" aria-live="polite"
+              style="display: block; margin: 10px 0; padding: 10px 12px; border: 1px solid rgba(148,163,184,.3); border-radius: 8px; font-variant-numeric: tabular-nums;"></output>
             <details>
               <summary>Chart data</summary>
               <div class="results-table-wrap">
@@ -1956,12 +1960,65 @@
     const forecastChart = document.getElementById("forecastChart");
     const forecastCanvas = document.getElementById("forecastChartCanvas");
     let forecastChartData = [];
+    let activeChartIndex = null;
+    const forecastChartLeft = 39;
+    const forecastChartRight = 16;
+    const forecastChartLabels = document.getElementById("forecastChartSemesters");
+    const forecastChartReadout = document.getElementById("forecastChartReadout");
+    const formatChartTerm = term => term.split("").join(".");
+    const formatChartValue = value => value === null ? "—" : value.toFixed(2);
 
-    function getSemesterGpaData(courses, completed, cutoff) {
+    const chartSemesterButtons = forecastSemesters.map((term, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = formatChartTerm(term);
+      button.setAttribute("aria-label", `Semester ${button.textContent}`);
+      button.style.cssText = "width:32px; min-height:32px; border:1px solid transparent; border-radius:6px; background:none; color:var(--text-main); font:inherit; font-size:.8rem; cursor:pointer;";
+      button.addEventListener("focus", () => selectChartSemester(index));
+      button.addEventListener("click", () => selectChartSemester(index));
+      forecastChartLabels.appendChild(button);
+      return button;
+    });
+
+    function selectChartSemester(index) {
+      if (!forecastChartData[index] || activeChartIndex === index) return;
+      activeChartIndex = index;
+      updateChartReadout();
+      drawSemesterGpaChart();
+    }
+
+    function updateChartReadout() {
+      const point = forecastChartData[activeChartIndex];
+      if (!point) return;
+      chartSemesterButtons.forEach((button, index) => {
+        const selected = index === activeChartIndex;
+        button.setAttribute("aria-pressed", String(selected));
+        button.style.borderColor = selected ? "#818cf8" : "transparent";
+        button.style.background = selected ? "rgba(129,140,248,.18)" : "none";
+      });
+      const values = point.gpa === null && point.minimum === null
+        ? "No recorded GPA or projection available."
+        : `Semester GPA ${formatChartValue(point.gpa)} · Recorded OGPA ${formatChartValue(point.ogpa)} · Min (Cs) ${formatChartValue(point.minimum)} · Max (As) ${formatChartValue(point.maximum)}`;
+      forecastChartReadout.textContent = `Semester ${formatChartTerm(point.term)} · ${values}`;
+    }
+
+    function inspectChartPointer(event) {
+      const { left, width } = forecastCanvas.getBoundingClientRect();
+      const fraction = (event.clientX - left - forecastChartLeft) / (width - forecastChartLeft - forecastChartRight);
+      const last = forecastChartData.length - 1;
+      selectChartSemester(Math.max(0, Math.min(last, Math.round(fraction * last))));
+    }
+
+    forecastCanvas.addEventListener("pointermove", event => {
+      if (event.pointerType !== "touch") inspectChartPointer(event);
+    });
+    forecastCanvas.addEventListener("click", inspectChartPointer);
+
+    function getSemesterGpaData(courses, completed) {
       let completedCredits = 0;
       let completedPoints = 0;
       let remainingCredits = 0;
-      return forecastSemesters.filter(term => term <= cutoff).map(term => {
+      return forecastSemesters.map(term => {
         let termCredits = 0;
         let termPoints = 0;
         let pendingCredits = 0;
@@ -2001,10 +2058,10 @@
       const ctx = forecastCanvas.getContext("2d");
       if (!ctx) return;
       ctx.scale(scale, scale);
-      const left = 39;
-      const right = width - 15;
+      const left = forecastChartLeft;
+      const right = width - forecastChartRight;
       const top = 14;
-      const bottom = height - 44;
+      const bottom = height - 14;
       const data = forecastChartData;
       const x = index => data.length === 1 ? (left + right) / 2 : left + index * (right - left) / (data.length - 1);
       const y = value => bottom - value * (bottom - top) / 4;
@@ -2022,8 +2079,6 @@
         ctx.fillText(String(tick), left - 8, y(tick));
       }
       ctx.textAlign = "center";
-      data.forEach(({ term }, index) => ctx.fillText(term.split("").join("."), x(index), bottom + 14));
-      ctx.fillText("Semester", (left + right) / 2, height - 7);
       ctx.save();
       ctx.translate(9, (top + bottom) / 2);
       ctx.rotate(-Math.PI / 2);
@@ -2031,11 +2086,38 @@
       ctx.restore();
 
       const firstProjection = data.findIndex(point => point.minimum !== null);
-      const drawSeries = (key, color, dashed) => {
+      const seriesValues = key => {
         const values = data.map(point => point[key]);
-        if (dashed && firstProjection > 0) {
+        if ((key === "minimum" || key === "maximum") && firstProjection > 0) {
           values[firstProjection - 1] = data[firstProjection - 1].ogpa;
         }
+        return values;
+      };
+
+      const minimum = seriesValues("minimum");
+      const maximum = seriesValues("maximum");
+      ctx.fillStyle = "rgba(110, 231, 183, .13)";
+      minimum.forEach((value, index) => {
+        if (index === 0 || value === null || minimum[index - 1] === null) return;
+        ctx.beginPath();
+        ctx.moveTo(x(index - 1), y(minimum[index - 1]));
+        ctx.lineTo(x(index), y(value));
+        ctx.lineTo(x(index), y(maximum[index]));
+        ctx.lineTo(x(index - 1), y(maximum[index - 1]));
+        ctx.closePath();
+        ctx.fill();
+      });
+
+      if (activeChartIndex !== null) {
+        ctx.strokeStyle = "rgba(203, 213, 225, .55)";
+        ctx.beginPath();
+        ctx.moveTo(x(activeChartIndex), top);
+        ctx.lineTo(x(activeChartIndex), bottom);
+        ctx.stroke();
+      }
+
+      const drawSeries = (key, color, dashed) => {
+        const values = seriesValues(key);
         ctx.strokeStyle = color;
         ctx.fillStyle = color;
         ctx.lineWidth = 2;
@@ -2051,7 +2133,8 @@
         data.forEach((point, index) => {
           if (point[key] === null) return;
           ctx.beginPath();
-          ctx.arc(x(index), y(point[key]), key === "gpa" ? 4.5 : 3, 0, Math.PI * 2);
+          const radius = (key === "gpa" ? 4.5 : 3) + (index === activeChartIndex ? 1.5 : 0);
+          ctx.arc(x(index), y(point[key]), radius, 0, Math.PI * 2);
           ctx.fill();
         });
       };
@@ -2063,7 +2146,10 @@
 
     function renderSemesterGpaChart(points) {
       forecastChartData = points;
-      forecastChart.hidden = !points.some(point => point.gpa !== null || point.minimum !== null);
+      const lastWithData = points.findLastIndex(point => point.gpa !== null || point.minimum !== null);
+      forecastChart.hidden = lastWithData < 0;
+      if (activeChartIndex === null && lastWithData >= 0) activeChartIndex = lastWithData;
+      updateChartReadout();
       document.getElementById("forecastChartRows").replaceChildren(...points.map(point => {
         const row = document.createElement("tr");
         const heading = document.createElement("th");
@@ -2116,9 +2202,9 @@
         .filter(course => course.semester <= semester)
         .sort((a, b) => a.semester.localeCompare(b.semester) || a.code.localeCompare(b.code));
       const upcoming = throughSemester.filter(course => !completed.has(course.code));
-      const semesterData = getSemesterGpaData(throughSemester, completed, semester);
+      const semesterData = getSemesterGpaData([...courses.values()], completed);
       renderSemesterGpaChart(semesterData);
-      const { completedCredits, completedPoints, remainingCredits } = semesterData[semesterData.length - 1];
+      const { completedCredits, completedPoints, remainingCredits } = semesterData.find(point => point.term === semester);
       const totalCredits = completedCredits + remainingCredits;
       const project = grade => (completedPoints + remainingCredits * window.GRADE_POINTS[grade]) / totalCredits;
       const target = forecastTarget.valueAsNumber;
